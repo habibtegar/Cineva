@@ -1,0 +1,90 @@
+@keyframes pulse {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.12; }
+}
+
+.skeleton-pulse {
+  background-color: #fff;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+/* Card skeleton */
+.skeleton-card {
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #16161d;
+}
+
+.skeleton-card__poster {
+  aspect-ratio: 2 / 3;
+  width: 100%;
+}
+
+.skeleton-card__info {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-card__line {
+  height: 12px;
+  border-radius: 4px;
+}
+
+/* Hero skeleton */
+.skeleton-hero {
+  height: 520px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .skeleton-hero {
+    height: 420px;
+  }
+}
+
+/* Detail skeleton */
+.skeleton-detail__backdrop {
+  height: 400px;
+  width: 100%;
+}
+
+.skeleton-detail__body {
+  display: flex;
+  gap: 32px;
+  padding: 32px 48px;
+  margin-top: -80px;
+  position: relative;
+  z-index: 2;
+}
+
+.skeleton-detail__poster {
+  width: 220px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.skeleton-detail__info {
+  flex: 1;
+  padding-top: 80px;
+}
+
+@media (max-width: 768px) {
+  .skeleton-detail__body {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    margin-top: -60px;
+  }
+
+  .skeleton-detail__poster {
+    width: 160px;
+  }
+
+  .skeleton-detail__info {
+    padding-top: 16px;
+    width: 100%;
+  }
+}

@@ -1,0 +1,86 @@
+.favorites-page {
+  padding-top: 100px;
+}
+
+.favorites-page__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.favorites-page__heading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  margin: 0;
+  letter-spacing: -0.4px;
+}
+
+.favorites-page__count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 8px;
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+/* ---- Empty state ---- */
+.favorites-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.favorites-page__empty-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 50%;
+  margin-bottom: 20px;
+  color: #ef4444;
+}
+
+.favorites-page__empty-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.favorites-page__empty-title {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #71717a;
+  margin: 0 0 8px 0;
+}
+
+.favorites-page__empty-sub {
+  font-size: 0.82rem;
+  color: #3f3f46;
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.favorites-page__empty-sub strong {
+  color: #ef4444;
+}
+
+@media (max-width: 600px) {
+  .favorites-page {
+    padding-top: 80px;
+  }
+}

@@ -1,0 +1,179 @@
+/* =============================================
+   MovieCard
+   ============================================= */
+
+.movie-card {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #111118;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.movie-card:hover {
+  transform: translateY(-5px) scale(1.012);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ---- Poster link ---- */
+.movie-card__poster-link {
+  display: block;
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  outline: none;
+}
+
+.movie-card__poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.movie-card:hover .movie-card__poster {
+  transform: scale(1.05);
+}
+
+/* No poster placeholder */
+.movie-card__no-poster {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a24;
+  color: #3f3f46;
+}
+
+.movie-card__no-poster svg {
+  width: 36px;
+  height: 36px;
+}
+
+/* Gradient overlay — bottom fade */
+.movie-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(8, 8, 12, 0.8) 0%,
+    rgba(8, 8, 12, 0.15) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* ---- Rating badge (★) — top-left ---- */
+.movie-card__rating-badge {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #eab308;
+  background-color: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 3px 7px 3px 5px;
+  border-radius: 5px;
+  letter-spacing: 0.01em;
+  z-index: 3;
+}
+
+.movie-card__rating-badge svg {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+/* ---- Favorite button — top-right ---- */
+.movie-card__fav {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 4;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  color: #9CA3AF; /* high-contrast default */
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease,
+    opacity 0.2s ease;
+  /* Hidden until card is hovered — unless active */
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* Show fav button on card hover */
+.movie-card:hover .movie-card__fav {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Active state — always visible, red */
+.movie-card__fav--active {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.movie-card__fav:hover:not(.movie-card__fav--active) {
+  color: #f87171;
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.movie-card__fav:active {
+  transform: scale(0.88) !important;
+}
+
+.movie-card__fav svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+
+/* ---- Info section ---- */
+.movie-card__info {
+  padding: 10px 12px 12px;
+}
+
+.movie-card__title {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #e4e4e7;
+  margin: 0 0 3px 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Year — high contrast #9CA3AF (text-gray-400) */
+.movie-card__year {
+  font-size: 0.73rem;
+  font-weight: 400;
+  color: #9CA3AF;
+  margin: 0;
+}

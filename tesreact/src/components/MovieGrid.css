@@ -1,0 +1,36 @@
+.movie-grid {
+  margin-bottom: 32px;
+}
+
+.movie-grid__title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  margin: 0 0 18px 0;
+  letter-spacing: -0.3px;
+}
+
+.movie-grid__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 768px) {
+  .movie-grid__list {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .movie-grid__list {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  .movie-grid__title {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+}

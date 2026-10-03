@@ -1,0 +1,47 @@
+.cast-card {
+  text-align: center;
+  flex-shrink: 0;
+  width: 110px;
+}
+
+.cast-card__photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto;
+  background-color: #1e1e28;
+}
+
+.cast-card__no-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #1e1e28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  color: #3f3f46;
+}
+
+.cast-card__no-photo svg {
+  width: 28px;
+  height: 28px;
+}
+
+.cast-card__name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #e4e4e7;
+  margin: 8px 0 2px;
+  line-height: 1.3;
+}
+
+.cast-card__character {
+  font-size: 0.72rem;
+  color: #71717a;
+  margin: 0;
+  line-height: 1.3;
+}
