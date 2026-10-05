@@ -2,6 +2,23 @@
   text-align: center;
   flex-shrink: 0;
   width: 110px;
+  text-decoration: none;
+  display: block;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.cast-card:hover {
+  transform: translateY(-4px);
+}
+
+.cast-card:hover .cast-card__photo {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.cast-card:hover .cast-card__name {
+  color: #ffffff;
 }
 
 .cast-card__photo {
@@ -12,6 +29,8 @@
   display: block;
   margin: 0 auto;
   background-color: #1e1e28;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .cast-card__no-photo {

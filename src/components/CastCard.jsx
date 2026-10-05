@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { getImageUrl } from '../services/tmdb';
 import './CastCard.css';
 
@@ -5,7 +6,7 @@ export default function CastCard({ person }) {
   const photo = getImageUrl(person.profile_path, 'w185');
 
   return (
-    <div className="cast-card">
+    <Link to={`/person/${person.id}`} className="cast-card">
       {photo ? (
         <img src={photo} alt={person.name} className="cast-card__photo" loading="lazy" />
       ) : (
@@ -18,6 +19,6 @@ export default function CastCard({ person }) {
       )}
       <p className="cast-card__name">{person.name}</p>
       <p className="cast-card__character">{person.character}</p>
-    </div>
+    </Link>
   );
 }

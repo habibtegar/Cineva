@@ -1,9 +1,10 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { searchMovies, getImageUrl } from '../services/tmdb';
 import './Navbar.css';
 
 /**
- * Debounce utility — returns a debounced version of `fn` with `delay` ms.
+ * Debounce utility — returns debounced value after delay ms.
  */
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -16,26 +17,69 @@ function useDebounce(value, delay) {
 
 export default function Navbar() {
   const [query, setQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const inputRef = useRef(null);
+  const searchContainerRef = useRef(null);
   const drawerRef = useRef(null);
 
-  // Debounce search — navigate automatically after 400ms of no typing
-  const debouncedQuery = useDebounce(query, 400);
+  // Debounce search with 300ms delay as requested
+  const debouncedQuery = useDebounce(query, 300);
 
+  // Fetch live search results
   useEffect(() => {
     const trimmed = debouncedQuery.trim();
-    if (trimmed.length >= 2) {
-      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+    if (trimmed.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
     }
-  }, [debouncedQuery, navigate]);
 
-  // Close drawer when route changes
+    setIsSearching(true);
+    let active = true;
+
+    searchMovies(trimmed, 1)
+      .then((data) => {
+        if (active) {
+          // Take top 5 results max
+          setSearchResults(data.results?.slice(0, 5) || []);
+          setShowDropdown(true);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to search movies:', err);
+        if (active) setSearchResults([]);
+      })
+      .finally(() => {
+        if (active) setIsSearching(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [debouncedQuery]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close dropdown and drawer when route changes
   useEffect(() => {
     setDrawerOpen(false);
+    setShowDropdown(false);
     setQuery('');
   }, [location.pathname, location.search]);
 
@@ -52,31 +96,33 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
 
-  // Click outside to close drawer
+  // Escape key closes dropdown and drawer
   useEffect(() => {
-    if (!drawerOpen) return;
-    const handler = (e) => {
-      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setShowDropdown(false);
         setDrawerOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [drawerOpen]);
-
-  // Escape key closes drawer
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') setDrawerOpen(false); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  const handleSelectMovie = (movieId) => {
+    setShowDropdown(false);
+    setQuery('');
+    setDrawerOpen(false);
+    navigate(`/movie/${movieId}`);
+  };
+
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const trimmed = query.trim();
     if (trimmed) {
+      setShowDropdown(false);
       navigate(`/search?q=${encodeURIComponent(trimmed)}`);
       inputRef.current?.blur();
+      setDrawerOpen(false);
     }
   };
 
@@ -95,21 +141,115 @@ export default function Navbar() {
               <Link to="/" className="navbar__link">Home</Link>
               <Link to="/favorites" className="navbar__link">Favorites</Link>
             </div>
-            <form className="navbar__search" onSubmit={handleSearchSubmit}>
-              <svg className="navbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Search movies..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="navbar__search-input"
-                aria-label="Search movies"
-              />
-            </form>
+
+            {/* Desktop Search with Live Dropdown */}
+            <div className="navbar__search-wrapper" ref={searchContainerRef}>
+              <form className="navbar__search" onSubmit={handleSearchSubmit}>
+                <svg className="navbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="Search movies..."
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    if (e.target.value.trim().length >= 2) setShowDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (query.trim().length >= 2 && searchResults.length > 0) {
+                      setShowDropdown(true);
+                    }
+                  }}
+                  className="navbar__search-input"
+                  aria-label="Search movies"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    className="navbar__search-clear"
+                    onClick={() => {
+                      setQuery('');
+                      setSearchResults([]);
+                      setShowDropdown(false);
+                      inputRef.current?.focus();
+                    }}
+                    aria-label="Clear search"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                )}
+              </form>
+
+              {/* Live search dropdown (Max 5 results) */}
+              {showDropdown && query.trim().length >= 2 && (
+                <div className="navbar__dropdown">
+                  {isSearching ? (
+                    <div className="navbar__dropdown-loading">
+                      <span className="navbar__dropdown-spinner" />
+                      <span>Mencari film...</span>
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <>
+                      <div className="navbar__dropdown-list">
+                        {searchResults.map((movie) => {
+                          const poster = getImageUrl(movie.poster_path, 'w92');
+                          const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
+                          const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+
+                          return (
+                            <button
+                              key={movie.id}
+                              type="button"
+                              className="navbar__dropdown-item"
+                              onClick={() => handleSelectMovie(movie.id)}
+                            >
+                              {poster ? (
+                                <img src={poster} alt={movie.title} className="navbar__dropdown-poster" />
+                              ) : (
+                                <div className="navbar__dropdown-poster navbar__dropdown-poster--empty">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                                    <line x1="7" y1="7" x2="17" y2="17" />
+                                  </svg>
+                                </div>
+                              )}
+                              <div className="navbar__dropdown-info">
+                                <h4 className="navbar__dropdown-title">{movie.title}</h4>
+                                <div className="navbar__dropdown-meta">
+                                  <span className="navbar__dropdown-year">{year}</span>
+                                  {rating && (
+                                    <span className="navbar__dropdown-rating">
+                                      ★ {rating}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        className="navbar__dropdown-footer"
+                        onClick={handleSearchSubmit}
+                      >
+                        Lihat semua hasil untuk "{query}" &rarr;
+                      </button>
+                    </>
+                  ) : (
+                    <div className="navbar__dropdown-empty">
+                      Tidak ada film ditemukan
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Burger button — mobile only */}
@@ -153,20 +293,50 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Drawer search */}
-        <form className="navbar__drawer-search" onSubmit={handleSearchSubmit}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search movies..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search movies"
-          />
-        </form>
+        {/* Drawer search with live dropdown */}
+        <div className="navbar__drawer-search-wrap">
+          <form className="navbar__drawer-search" onSubmit={handleSearchSubmit}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search movies..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search movies"
+            />
+          </form>
+
+          {/* Drawer Live Search Results */}
+          {query.trim().length >= 2 && searchResults.length > 0 && (
+            <div className="navbar__drawer-results">
+              {searchResults.map((movie) => {
+                const poster = getImageUrl(movie.poster_path, 'w92');
+                const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
+                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+                return (
+                  <button
+                    key={movie.id}
+                    type="button"
+                    className="navbar__dropdown-item"
+                    onClick={() => handleSelectMovie(movie.id)}
+                  >
+                    {poster && <img src={poster} alt={movie.title} className="navbar__dropdown-poster" />}
+                    <div className="navbar__dropdown-info">
+                      <h4 className="navbar__dropdown-title">{movie.title}</h4>
+                      <div className="navbar__dropdown-meta">
+                        <span className="navbar__dropdown-year">{year}</span>
+                        {rating && <span className="navbar__dropdown-rating">★ {rating}</span>}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* Drawer links */}
         <nav className="navbar__drawer-links">

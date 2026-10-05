@@ -5,6 +5,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import MovieDetail from './pages/MovieDetail';
+import PersonDetail from './pages/PersonDetail';
 import Favorites from './pages/Favorites';
 import { useFavorites } from './hooks/useFavorites';
 
@@ -33,6 +34,15 @@ export default function App() {
             path="/movie/:id"
             element={
               <MovieDetail
+                toggleFavorite={toggleFavorite}
+                isFavorite={isFavorite}
+              />
+            }
+          />
+          <Route
+            path="/person/:id"
+            element={
+              <PersonDetail
                 toggleFavorite={toggleFavorite}
                 isFavorite={isFavorite}
               />
