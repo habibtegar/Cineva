@@ -10,7 +10,6 @@ import {
   getTopRated,
   getUpcoming,
   getGenres,
-  getMoviesByGenre,
   getMovieDetail,
 } from '../services/tmdb';
 import './Home.css';
@@ -35,16 +34,12 @@ export default function Home({ toggleFavorite, isFavorite }) {
     trending: [], popular: [], topRated: [], upcoming: [],
   });
 
-  // Active tab
+  // Active category tab
   const [activeTab, setActiveTab] = useState('trending');
 
-  // Genre filter
+  // Genre filter (applied to the active tab)
   const [genres, setGenres] = useState([]);
-  const [activeGenre, setActiveGenre] = useState(null);
-  const [genreMovies, setGenreMovies] = useState([]);
-  const [genrePage, setGenrePage] = useState(1);
-  const [genreLoading, setGenreLoading] = useState(false);
-  const [genreHasMore, setGenreHasMore] = useState(false);
+  const [activeGenre, setActiveGenre] = useState('');
 
   // Per-tab page (for Load More)
   const [tabPage, setTabPage] = useState({ trending: 1, popular: 1, topRated: 1, upcoming: 1 });
@@ -99,7 +94,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Load more for tabs (append next page)
+  // Load more for current active tab (append next page)
   const handleLoadMoreTab = async () => {
     const nextPage = tabPage[activeTab] + 1;
     setLoadingMore(true);
@@ -127,49 +122,20 @@ export default function Home({ toggleFavorite, isFavorite }) {
     }
   };
 
-  // Genre selection
-  const handleGenreSelect = async (genreId) => {
-    if (activeGenre === genreId) {
-      setActiveGenre(null);
-      setGenreMovies([]);
-      return;
-    }
-    setActiveGenre(genreId);
-    setGenrePage(1);
-    setGenreLoading(true);
-    try {
-      const data = await getMoviesByGenre(genreId, 1);
-      setGenreMovies(data.results || []);
-      setGenreHasMore((data.total_pages || 1) > 1);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setGenreLoading(false);
-    }
-  };
+  // Movies from currently active tab
+  const tabMovies = allMovies[activeTab] || [];
 
-  const handleLoadMoreGenre = async () => {
-    const nextPage = genrePage + 1;
-    setLoadingMore(true);
-    try {
-      const data = await getMoviesByGenre(activeGenre, nextPage);
-      setGenreMovies((prev) => [...prev, ...(data.results || [])]);
-      setGenrePage(nextPage);
-      setGenreHasMore(nextPage < (data.total_pages || 1));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
+  // Filter active tab's movies by chosen genre
+  const currentMovies = activeGenre
+    ? tabMovies.filter((movie) => movie.genre_ids?.includes(Number(activeGenre)))
+    : tabMovies;
 
-  // Current displayed movies (genre overrides tab)
-  const currentMovies = activeGenre ? genreMovies : allMovies[activeTab] || [];
   const currentTabLabel = TABS.find((t) => t.key === activeTab)?.label || '';
-  const currentGenreLabel = genres.find((g) => g.id === activeGenre)?.name || '';
-  // Dynamic section title — e.g. "Trending Movies", "Action Movies"
+  const currentGenreLabel = genres.find((g) => g.id === Number(activeGenre))?.name || '';
+  
+  // Dynamic section title — e.g. "Trending • Action" or "Top Rated Movies"
   const sectionTitle = activeGenre
-    ? `${currentGenreLabel} Movies`
+    ? `${currentTabLabel} • ${currentGenreLabel}`
     : `${currentTabLabel} Movies`;
 
   if (error) {
@@ -193,55 +159,61 @@ export default function Home({ toggleFavorite, isFavorite }) {
       )}
 
       <div className="page-container">
-        {/* ---- Category tabs + Genre filter ---- */}
+        {/* ---- Category tabs (left) + Genre filter (right) ---- */}
         <div className="home__controls">
-          {/* Tabs */}
+          {/* Tabs: Trending, Popular, Top Rated, Upcoming */}
           <div className="home__tabs" role="tablist">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 role="tab"
-                aria-selected={activeTab === tab.key && !activeGenre}
-                className={`home__tab${activeTab === tab.key && !activeGenre ? ' home__tab--active' : ''}`}
-                onClick={() => {
-                  setActiveTab(tab.key);
-                  setActiveGenre(null);
-                  setGenreMovies([]);
-                }}
+                aria-selected={activeTab === tab.key}
+                className={`home__tab${activeTab === tab.key ? ' home__tab--active' : ''}`}
+                onClick={() => setActiveTab(tab.key)}
               >
                 {tab.label}
               </button>
             ))}
           </div>
 
-          {/* Genre filter */}
+          {/* Genre filter dropdown */}
           {genres.length > 0 && (
-            <div className="home__genre-wrap">
-              <select
-                className="home__genre-select"
-                value={activeGenre || ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  handleGenreSelect(val ? Number(val) : null);
-                }}
-                aria-label="Filter by genre"
-              >
-                <option value="">All Genres</option>
-                {genres.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-              <svg className="home__genre-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+            <div className="home__genre-filter">
+              <div className="home__select-inner">
+                <select
+                  className="home__select"
+                  value={activeGenre}
+                  onChange={(e) => setActiveGenre(e.target.value)}
+                  aria-label="Filter by genre"
+                >
+                  <option value="">Semua Genre</option>
+                  {genres.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+                <svg className="home__select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+
+              {activeGenre && (
+                <button
+                  type="button"
+                  className="home__reset-genre"
+                  onClick={() => setActiveGenre('')}
+                  title="Reset filter genre"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           )}
         </div>
 
         {/* ---- Movie section ---- */}
-        {loading || genreLoading ? (
+        {loading ? (
           <SkeletonGrid count={PAGE_SIZE} />
-        ) : (
+        ) : currentMovies.length > 0 ? (
           <>
             <MovieGrid
               title={sectionTitle}
@@ -251,22 +223,37 @@ export default function Home({ toggleFavorite, isFavorite }) {
             />
 
             {/* Load More */}
-            {currentMovies.length > 0 && (
-              <div className="home__load-more">
-                <button
-                  className="home__load-btn"
-                  onClick={activeGenre ? handleLoadMoreGenre : handleLoadMoreTab}
-                  disabled={loadingMore || (activeGenre && !genreHasMore)}
-                >
-                  {loadingMore ? (
-                    <span className="home__load-spinner" />
-                  ) : (
-                    'Load More'
-                  )}
-                </button>
-              </div>
-            )}
+            <div className="home__load-more">
+              <button
+                className="home__load-btn"
+                onClick={handleLoadMoreTab}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <span className="home__load-spinner" />
+                ) : (
+                  'Load More'
+                )}
+              </button>
+            </div>
           </>
+        ) : (
+          /* Empty state saat filter genre tidak menemukan film di tab ini */
+          <div className="home__empty-filter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
+            <p className="home__empty-title">
+              Tidak ada film <strong>{currentGenreLabel}</strong> di kategori <strong>{currentTabLabel}</strong> saat ini.
+            </p>
+            <button
+              onClick={() => setActiveGenre('')}
+              className="home__empty-reset"
+            >
+              Lihat Semua Film {currentTabLabel}
+            </button>
+          </div>
         )}
       </div>
 

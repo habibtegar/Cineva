@@ -41,7 +41,11 @@ export const getNowPlaying = (page = 1) =>
 
 /** Movie detail */
 export const getMovieDetail = (id) =>
-  fetchFromTMDB(`/movie/${id}`, { append_to_response: 'credits,videos,similar' });
+  fetchFromTMDB(`/movie/${id}`, { append_to_response: 'credits,videos,similar,reviews' });
+
+/** Movie reviews */
+export const getMovieReviews = (id, page = 1) =>
+  fetchFromTMDB(`/movie/${id}/reviews`, { page });
 
 /** Search */
 export const searchMovies = (query, page = 1) =>
@@ -58,3 +62,11 @@ export const getMoviesByGenre = (genreId, page = 1) =>
     sort_by: 'popularity.desc',
     page,
   });
+
+/** Person details & credits */
+export const getPersonDetail = (id) =>
+  fetchFromTMDB(`/person/${id}`);
+
+export const getPersonMovieCredits = (id) =>
+  fetchFromTMDB(`/person/${id}/movie_credits`);
+
