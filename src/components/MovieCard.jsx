@@ -45,8 +45,9 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
         </div>
       </Link>
 
-      {/* Favorite button — top-right, always in DOM */}
+      {/* Favorite button — top-right, standardized */}
       <button
+        type="button"
         className={`movie-card__fav${isFavorite ? ' movie-card__fav--active' : ''}`}
         onClick={handleFavClick}
         aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -54,9 +55,11 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
       >
         <svg
           viewBox="0 0 24 24"
-          fill={isFavorite ? 'currentColor' : 'none'}
-          stroke="currentColor"
+          fill={isFavorite ? '#ef4444' : 'none'}
+          stroke={isFavorite ? '#ef4444' : '#ffffff'}
           strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           aria-hidden="true"
         >
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -65,9 +68,11 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
 
       {/* Card info */}
       <div className="movie-card__info">
-        <h3 className="movie-card__title">{movie.title}</h3>
-        {/* Year — higher contrast #9CA3AF */}
-        <p className="movie-card__year">{year}</p>
+        <h3 className="movie-card__title line-clamp-1" title={movie.title}>
+          {movie.title}
+        </h3>
+        {/* Year — higher contrast #9ca3af text-xs */}
+        <p className="movie-card__year text-gray-400 text-xs">{year}</p>
       </div>
     </div>
   );

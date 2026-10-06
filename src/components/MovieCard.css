@@ -96,60 +96,54 @@
 /* ---- Favorite button — top-right ---- */
 .movie-card__fav {
   position: absolute;
-  top: 7px;
-  right: 7px;
-  z-index: 4;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
   cursor: pointer;
-  color: #9CA3AF; /* high-contrast default */
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.15s ease,
-    opacity 0.2s ease;
-  /* Hidden until card is hovered — unless active */
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-/* Show fav button on card hover */
-.movie-card:hover .movie-card__fav {
+  color: #ffffff;
+  padding: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 1;
-  transform: scale(1);
 }
 
-/* Active state — always visible, red */
+.movie-card__fav:hover {
+  background-color: rgba(239, 68, 68, 0.8);
+  border-color: rgba(239, 68, 68, 0.9);
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+/* Active state — favorited */
 .movie-card__fav--active {
-  opacity: 1 !important;
-  transform: scale(1) !important;
-  color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.18);
+  background-color: rgba(0, 0, 0, 0.55);
   border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
 }
 
-.movie-card__fav:hover:not(.movie-card__fav--active) {
-  color: #f87171;
-  background-color: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
+.movie-card__fav--active:hover {
+  background-color: rgba(239, 68, 68, 0.85);
+  border-color: rgba(239, 68, 68, 0.95);
+  color: #ffffff;
+  transform: scale(1.08);
 }
 
 .movie-card__fav:active {
-  transform: scale(0.88) !important;
+  transform: scale(0.92) !important;
 }
 
 .movie-card__fav svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   transition: transform 0.15s ease;
 }
 
@@ -162,18 +156,23 @@
   font-size: 0.82rem;
   font-weight: 500;
   color: #e4e4e7;
-  margin: 0 0 3px 0;
+  margin: 0 0 4px 0;
   line-height: 1.35;
+  height: 1.35em;
+  min-height: 1.35em;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Year — high contrast #9CA3AF (text-gray-400) */
+/* Year — high contrast #9ca3af (text-gray-400 text-xs) */
 .movie-card__year {
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   font-weight: 400;
-  color: #9CA3AF;
+  color: #9ca3af;
   margin: 0;
+  line-height: 1.2;
 }

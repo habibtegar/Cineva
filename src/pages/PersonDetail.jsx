@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import MovieGrid from '../components/MovieGrid';
 import ErrorState from '../components/ErrorState';
 import { getPersonDetail, getPersonMovieCredits, getImageUrl } from '../services/tmdb';

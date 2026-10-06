@@ -154,6 +154,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
       ) : (
         <HeroSection
           movie={hero}
+          genres={genres}
           onWatchTrailer={heroTrailerKey ? () => setTrailerOpen(true) : undefined}
         />
       )}

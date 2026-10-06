@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import CastCard from '../components/CastCard';
 import MovieGrid from '../components/MovieGrid';
 import TrailerModal from '../components/TrailerModal';
@@ -27,6 +27,27 @@ function formatReviewDate(dateStr) {
     });
   } catch {
     return dateStr.slice(0, 10);
+  }
+}
+
+// Currency formatter
+function formatCurrency(num) {
+  if (!num || num === 0) return '—';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(num);
+}
+
+// Language name formatter
+function getLanguageName(code) {
+  if (!code) return '—';
+  try {
+    const langNames = new Intl.DisplayNames(['en'], { type: 'language' });
+    return langNames.of(code) || code.toUpperCase();
+  } catch {
+    return code.toUpperCase();
   }
 }
 
@@ -67,7 +88,7 @@ function ReviewItem({ review }) {
         )}
       </div>
 
-      <p className="detail__review-content">{displayContent}</p>
+      <p className="detail__review-content break-words">{displayContent}</p>
 
       {isLong && (
         <button
@@ -84,11 +105,20 @@ function ReviewItem({ review }) {
 
 export default function MovieDetail({ toggleFavorite, isFavorite }) {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
 
   const handleShare = async () => {
     try {
@@ -123,6 +153,7 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
 
   useEffect(() => {
     fetchMovie();
+    window.scrollTo(0, 0);
   }, [id]);
 
   if (loading) return <SkeletonDetail />;
@@ -150,42 +181,10 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
   const similar = movie.similar?.results?.slice(0, 6) || [];
   const reviews = movie.reviews?.results || [];
 
-  // Filter crew: Director (job === 'Director') & Writer (department === 'Writing' || job === 'Writer')
-  const crew = movie.credits?.crew || [];
-  const directors = crew
-    .filter((person) => person.job === 'Director')
-    .reduce((acc, curr) => {
-      if (!acc.some((p) => p.name === curr.name)) acc.push(curr);
-      return acc;
-    }, []);
-
-  const writers = crew
-    .filter((person) => person.department === 'Writing' || person.job === 'Writer')
-    .reduce((acc, curr) => {
-      if (!acc.some((p) => p.name === curr.name)) acc.push(curr);
-      return acc;
-    }, []);
-
-  // Format currency (USD)
-  const formatCurrency = (amount) => {
-    if (!amount || amount <= 0) return '—';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  // Format language code to display name
-  const getLanguageName = (code) => {
-    if (!code) return '—';
-    try {
-      const displayNames = new Intl.DisplayNames(['id', 'en'], { type: 'language' });
-      return displayNames.of(code) || code.toUpperCase();
-    } catch {
-      return code.toUpperCase();
-    }
-  };
+  const director = movie.credits?.crew?.find((c) => c.job === 'Director')?.name;
+  const writer = movie.credits?.crew?.find(
+    (c) => c.job === 'Screenplay' || c.job === 'Writer' || c.job === 'Story'
+  )?.name;
 
   const trailer = movie.videos?.results?.find(
     (v) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')
@@ -204,37 +203,28 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
 
       {/* Main content */}
       <div className="detail__body page-container">
+        {/* Back navigation button matching PersonDetail */}
+        <div className="detail__back">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="detail__back-btn"
+            aria-label="Back"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Back
+          </button>
+        </div>
+
         <div className="detail__top">
-          <div className="detail__left-col">
+          {/* Poster */}
+          <div className="detail__poster-wrap">
             {poster && (
               <img src={poster} alt={movie.title} className="detail__poster" />
             )}
-
-            {/* Sidebar / Movie Facts */}
-            <div className="detail__sidebar">
-              <h3 className="detail__sidebar-title">Movie Facts</h3>
-              <div className="detail__sidebar-list">
-                <div className="detail__sidebar-item">
-                  <span className="detail__sidebar-label">Status</span>
-                  <span className="detail__sidebar-value">{movie.status || '—'}</span>
-                </div>
-                <div className="detail__sidebar-item">
-                  <span className="detail__sidebar-label">Original Language</span>
-                  <span className="detail__sidebar-value">
-                    {getLanguageName(movie.original_language)}
-                    <span className="detail__sidebar-sub">({movie.original_language?.toUpperCase() || '—'})</span>
-                  </span>
-                </div>
-                <div className="detail__sidebar-item">
-                  <span className="detail__sidebar-label">Budget</span>
-                  <span className="detail__sidebar-value">{formatCurrency(movie.budget)}</span>
-                </div>
-                <div className="detail__sidebar-item">
-                  <span className="detail__sidebar-label">Revenue</span>
-                  <span className="detail__sidebar-value">{formatCurrency(movie.revenue)}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="detail__info">
@@ -267,6 +257,7 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
             <div className="detail__actions">
               {trailer && (
                 <button
+                  type="button"
                   className="detail__action-btn detail__action-btn--play"
                   onClick={() => setTrailerOpen(true)}
                 >
@@ -278,6 +269,7 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
               )}
               {toggleFavorite && (
                 <button
+                  type="button"
                   className={`detail__action-btn detail__action-btn--fav${fav ? ' detail__action-btn--fav-active' : ''}`}
                   onClick={() => toggleFavorite(movie)}
                 >
@@ -288,29 +280,18 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
                 </button>
               )}
               <button
+                type="button"
                 className={`detail__action-btn detail__action-btn--share${copied ? ' detail__action-btn--copied' : ''}`}
                 onClick={handleShare}
-                title="Share link to this movie"
               >
-                {copied ? (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    Link Copied!
-                  </>
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3" />
-                      <circle cx="6" cy="12" r="3" />
-                      <circle cx="18" cy="19" r="3" />
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                    </svg>
-                    Share
-                  </>
-                )}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                {copied ? 'Link Copied!' : 'Share'}
               </button>
             </div>
 
@@ -321,27 +302,48 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
               </div>
             )}
 
-            {/* Key Crew: Director & Writer */}
-            {(directors.length > 0 || writers.length > 0) && (
+            {(director || writer) && (
               <div className="detail__crew">
-                {directors.length > 0 && (
+                {director && (
                   <div className="detail__crew-item">
                     <span className="detail__crew-role">Director</span>
-                    <span className="detail__crew-name">
-                      {directors.map((d) => d.name).join(', ')}
-                    </span>
+                    <span className="detail__crew-name">{director}</span>
                   </div>
                 )}
-                {writers.length > 0 && (
+                {writer && (
                   <div className="detail__crew-item">
                     <span className="detail__crew-role">Writer</span>
-                    <span className="detail__crew-name">
-                      {writers.map((w) => w.name).join(', ')}
-                    </span>
+                    <span className="detail__crew-name">{writer}</span>
                   </div>
                 )}
               </div>
             )}
+          </div>
+
+          {/* Sidebar / Movie Facts */}
+          <div className="detail__sidebar">
+            <h3 className="detail__sidebar-title">Movie Facts</h3>
+            <div className="detail__sidebar-list">
+              <div className="detail__sidebar-item">
+                <span className="detail__sidebar-label">Status</span>
+                <span className="detail__sidebar-value">{movie.status || '—'}</span>
+              </div>
+              <div className="detail__sidebar-item">
+                <span className="detail__sidebar-label">Original Language</span>
+                <span className="detail__sidebar-value">
+                  {getLanguageName(movie.original_language)}
+                  <span className="detail__sidebar-sub">({movie.original_language?.toUpperCase() || '—'})</span>
+                </span>
+              </div>
+              <div className="detail__sidebar-item">
+                <span className="detail__sidebar-label">Budget</span>
+                <span className="detail__sidebar-value">{formatCurrency(movie.budget)}</span>
+              </div>
+              <div className="detail__sidebar-item">
+                <span className="detail__sidebar-label">Revenue</span>
+                <span className="detail__sidebar-value">{formatCurrency(movie.revenue)}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -349,7 +351,7 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
         {cast.length > 0 && (
           <section className="detail__cast">
             <h2 className="detail__section-title">Cast</h2>
-            <div className="detail__cast-list">
+            <div className="detail__cast-list overflow-x-auto no-scrollbar flex gap-4">
               {cast.map((person) => (
                 <CastCard key={person.credit_id || person.id} person={person} />
               ))}
@@ -357,39 +359,30 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
           </section>
         )}
 
-        {/* Reviews / Ulasan Penonton */}
-        <section className="detail__reviews">
-          <h2 className="detail__section-title">
-            Reviews
-            {reviews.length > 0 && (
-              <span className="detail__reviews-count">({reviews.length})</span>
-            )}
-          </h2>
-
-          {reviews.length > 0 ? (
+        {/* Reviews */}
+        {reviews.length > 0 && (
+          <section className="detail__reviews">
+            <h2 className="detail__section-title">
+              Reviews <span className="detail__reviews-count">({reviews.length})</span>
+            </h2>
             <div className="detail__reviews-list">
-              {reviews.map((review) => (
-                <ReviewItem key={review.id} review={review} />
+              {reviews.map((rev) => (
+                <ReviewItem key={rev.id} review={rev} />
               ))}
             </div>
-          ) : (
-            <div className="detail__no-reviews">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              <p>Belum ada ulasan untuk film ini.</p>
-            </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Similar Movies */}
         {similar.length > 0 && (
-          <MovieGrid
-            title="More Like This"
-            movies={similar}
-            onToggleFavorite={toggleFavorite}
-            isFavorite={isFavorite}
-          />
+          <section className="detail__similar pb-16">
+            <MovieGrid
+              title="More Like This"
+              movies={similar}
+              onToggleFavorite={toggleFavorite}
+              isFavorite={isFavorite}
+            />
+          </section>
         )}
       </div>
 
@@ -404,11 +397,11 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
 
       {/* Toast Notification */}
       {copied && (
-        <div className="detail__toast">
+        <div className="detail__toast" role="status" aria-live="polite">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          <span>Link film berhasil disalin!</span>
+          <span>Link copied to clipboard!</span>
         </div>
       )}
     </div>
