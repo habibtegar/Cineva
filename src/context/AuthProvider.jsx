@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   signInWithPopup,
   signOut,
@@ -50,6 +51,7 @@ export function AuthProvider({ children }) {
         photoURL: loggedUser.photoURL || '',
       };
       setUser(userData);
+      toast.success(`Selamat datang, ${userData.displayName}!`);
       return userData;
     } catch (err) {
       console.error('Google Sign-In failed:', err);
@@ -58,7 +60,7 @@ export function AuthProvider({ children }) {
         setError('Login dibatalkan oleh pengguna.');
       } else {
         setError(err.message || 'Gagal login dengan Google.');
-        alert(`Login gagal: ${err.message || 'Periksa konfigurasi Firebase Anda.'}`);
+        toast.error(`Login gagal: ${err.message || 'Periksa konfigurasi Firebase Anda.'}`);
       }
       throw err;
     }
@@ -69,9 +71,11 @@ export function AuthProvider({ children }) {
     try {
       await signOut(auth);
       setUser(null);
+      toast.success('Berhasil logout');
     } catch (err) {
       console.error('Sign-out failed:', err);
       setError(err.message || 'Gagal logout.');
+      toast.error('Gagal logout');
       throw err;
     }
   };
