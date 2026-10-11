@@ -26,10 +26,11 @@
 .navbar__inner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
   max-width: 1320px;
   margin: 0 auto;
-  gap: 32px;
+  gap: 20px;
 }
 
 /* Logo */
@@ -562,6 +563,53 @@
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
 }
 
+/* ---- Mobile Actions (Search + Burger) — mobile only ---- */
+.navbar__mobile-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  z-index: 110;
+}
+
+.navbar__mobile-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.navbar__mobile-search-btn:hover {
+  background-color: rgba(0, 0, 0, 0.65);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.navbar__mobile-search-btn:active {
+  transform: scale(0.95);
+}
+
+.navbar__mobile-search-btn--active {
+  background-color: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #ef4444;
+}
+
+.navbar__mobile-search-btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
 /* ---- Burger button — mobile only ---- */
 .navbar__burger {
   display: none;
@@ -579,7 +627,6 @@
   cursor: pointer;
   padding: 8px;
   z-index: 110;
-  margin-left: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
 }
@@ -608,6 +655,99 @@
 }
 .navbar__burger--active span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ---- Mobile Floating Search Dropdown ---- */
+.navbar__mobile-search-dropdown {
+  position: fixed;
+  top: 64px;
+  left: 12px;
+  right: 12px;
+  z-index: 105;
+  background-color: rgba(18, 18, 20, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: navbarMobileSlideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes navbarMobileSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.navbar__mobile-search-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 8px 12px;
+  width: 100%;
+}
+
+.navbar__mobile-search-form-icon {
+  width: 18px;
+  height: 18px;
+  color: #a1a1aa;
+  flex-shrink: 0;
+}
+
+.navbar__mobile-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+}
+
+.navbar__mobile-search-input::placeholder {
+  color: #71717a;
+}
+
+.navbar__mobile-search-clear {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.navbar__mobile-search-clear:hover {
+  color: #ffffff;
+}
+
+.navbar__mobile-search-clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+.navbar__mobile-search-results {
+  max-height: 320px;
+  overflow-y: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
 }
 
 /* =============================================
@@ -870,6 +1010,14 @@
     display: none; /* Hide desktop nav on mobile */
   }
 
+  .navbar__mobile-actions {
+    display: flex;
+  }
+
+  .navbar__mobile-search-dropdown {
+    top: 60px;
+  }
+
   .navbar__burger {
     display: flex;
   }
@@ -886,5 +1034,12 @@
   .navbar__drawer {
     display: flex;
     flex-direction: column;
+  }
+}
+
+@media (min-width: 769px) {
+  .navbar__mobile-actions,
+  .navbar__mobile-search-dropdown {
+    display: none !important;
   }
 }
