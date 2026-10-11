@@ -8,6 +8,7 @@ import Search from './pages/Search';
 import MovieDetail from './pages/MovieDetail';
 import PersonDetail from './pages/PersonDetail';
 import Favorites from './pages/Favorites';
+import Profile from './pages/Profile';
 import { useFavorites } from './hooks/useFavorites';
 
 export default function App() {
@@ -80,6 +81,16 @@ export default function App() {
             path="/favorites"
             element={
               <Favorites
+                favorites={favorites}
+                toggleFavorite={toggleFavorite}
+                isFavorite={isFavorite}
+              />
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <Profile
                 favorites={favorites}
                 toggleFavorite={toggleFavorite}
                 isFavorite={isFavorite}

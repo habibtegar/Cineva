@@ -1,0 +1,254 @@
+/* ==============================================================
+   Profile Page — Clean & Minimalist Cineva Style
+   ============================================================== */
+
+.profile-page {
+  min-height: 100vh;
+  background-color: #141414;
+  color: #e4e4e7;
+  padding-top: 100px;
+  padding-bottom: 60px;
+}
+
+/* Guard: Ensure SVGs stay properly sized */
+.profile-page svg {
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ---- Header Profil (Minimalis) ---- */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+
+.profile-header__avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #27272a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-header__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-header__avatar-initial {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.profile-header__body {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.profile-header__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-header__name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.4px;
+}
+
+.profile-header__email {
+  font-size: 0.88rem;
+  color: #a1a1aa;
+  margin: 4px 0 0;
+}
+
+.profile-header__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.88rem;
+  color: #e4e4e7;
+}
+
+.profile-header__stat-count {
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+}
+
+.profile-header__stat-label {
+  color: #a1a1aa;
+}
+
+/* Sign Out button — Simple & Elegant */
+.profile-header__actions {
+  display: flex;
+  align-items: center;
+}
+
+.profile-header__signout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #f87171;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.profile-header__signout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+}
+
+.profile-header__signout-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---- Content Section (Favorited Movies) ---- */
+.profile-content__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.profile-content__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+/* ---- Empty State (Minimalist) ---- */
+.profile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 20px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.profile-empty__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #71717a;
+  margin-bottom: 16px;
+}
+
+.profile-empty__icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.profile-empty__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+}
+
+.profile-empty__desc {
+  font-size: 0.88rem;
+  color: #71717a;
+  max-width: 380px;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.profile-empty__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #09090b;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.profile-empty__btn:hover {
+  opacity: 0.9;
+}
+
+/* Skeleton Loading Cards */
+.profile-skeleton {
+  aspect-ratio: 2 / 3;
+  background-color: #1f1f23;
+  border-radius: 8px;
+  animation: profilePulse 1.5s infinite ease-in-out;
+}
+
+@keyframes profilePulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.25; }
+}
+
+@media (max-width: 640px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .profile-header__body {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .profile-header__actions {
+    width: 100%;
+  }
+  .profile-header__signout-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
