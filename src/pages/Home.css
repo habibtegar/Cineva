@@ -21,36 +21,57 @@
 /* ---- Tabs ---- */
 .home__tabs {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 8px;
-  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .home__tab {
-  padding: 7px 16px;
-  border: none;
-  border-radius: 6px;
+  padding: 8px 18px;
+  border: 1px solid transparent;
+  border-radius: 7px;
   background-color: transparent;
   color: #a1a1aa;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: color 0.18s, background-color 0.18s;
   white-space: nowrap;
+  transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, background-color;
 }
 
 .home__tab:hover {
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.home__tab:active {
+  transform: translateY(0);
 }
 
 .home__tab--active {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
   font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.home__tab--active:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 /* ---- Genre filter on right ---- */

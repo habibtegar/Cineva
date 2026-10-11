@@ -121,6 +121,11 @@
   line-height: 1.65;
   color: #d1d5db;
   margin: 0 0 22px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Action buttons */
@@ -134,7 +139,7 @@
 .hero__btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   padding: 11px 24px;
   border-radius: 8px;
   font-size: 0.88rem;
@@ -144,44 +149,64 @@
   text-decoration: none;
   border: none;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
 }
 
 .hero__btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  transform: translateY(-2px) scale(1.02);
 }
 
 .hero__btn:active {
-  transform: scale(0.98);
+  transform: translateY(0) scale(0.98);
 }
 
 .hero__btn-icon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
+  transition: transform 0.25s ease;
 }
 
 /* Play / primary */
 .hero__btn--play {
   background-color: #ffffff;
-  color: #0a0a0f;
+  color: #09090b;
 }
 
 .hero__btn--play:hover {
-  background-color: #f4f4f5;
+  background-color: #e4e4e7;
+  color: #000000;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.hero__btn--play:hover .hero__btn-icon {
+  transform: scale(1.1);
 }
 
 /* Secondary / outline */
 .hero__btn--secondary {
   background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .hero__btn--secondary:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.35);
+  background-color: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 255, 255, 0.12);
+}
+
+.hero__btn--secondary:hover .hero__btn-icon {
+  transform: scale(1.08);
 }
 
 /* ---- Responsive ---- */
@@ -212,6 +237,7 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    text-overflow: ellipsis;
     margin-bottom: 22px;
   }
 }

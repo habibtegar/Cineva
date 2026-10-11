@@ -187,7 +187,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
                   onChange={(e) => setActiveGenre(e.target.value)}
                   aria-label="Filter by genre"
                 >
-                  <option value="">Semua Genre</option>
+                  <option value="">All Genres</option>
                   {genres.map((g) => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
@@ -202,7 +202,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
                   type="button"
                   className="home__reset-genre"
                   onClick={() => setActiveGenre('')}
-                  title="Reset filter genre"
+                  title="Reset genre filter"
                 >
                   Reset
                 </button>
@@ -239,20 +239,20 @@ export default function Home({ toggleFavorite, isFavorite }) {
             </div>
           </>
         ) : (
-          /* Empty state saat filter genre tidak menemukan film di tab ini */
+          /* Empty state when genre filter finds no movies in this tab */
           <div className="home__empty-filter">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="12" cy="12" r="10" />
               <line x1="8" y1="12" x2="16" y2="12" />
             </svg>
             <p className="home__empty-title">
-              Tidak ada film <strong>{currentGenreLabel}</strong> di kategori <strong>{currentTabLabel}</strong> saat ini.
+              No movies found for <strong>{currentGenreLabel}</strong> in <strong>{currentTabLabel}</strong>.
             </p>
             <button
               onClick={() => setActiveGenre('')}
               className="home__empty-reset"
             >
-              Lihat Semua Film {currentTabLabel}
+              Show All {currentTabLabel} Movies
             </button>
           </div>
         )}

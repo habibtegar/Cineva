@@ -58,11 +58,7 @@ export default function HeroSection({ movie, genres = [], onWatchTrailer }) {
         <h1 className="hero__title">{movie.title}</h1>
 
         <p className="hero__overview">
-          {movie.overview
-            ? movie.overview.length > 220
-              ? movie.overview.slice(0, 220) + '...'
-              : movie.overview
-            : ''}
+          {movie.overview || ''}
         </p>
 
         <div className="hero__actions">
