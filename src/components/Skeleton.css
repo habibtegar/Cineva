@@ -34,13 +34,25 @@
 
 /* Hero skeleton */
 .skeleton-hero {
-  height: 520px;
+  height: 85vh;
+  min-height: 580px;
+  max-height: 900px;
   width: 100%;
 }
 
 @media (max-width: 768px) {
   .skeleton-hero {
-    height: 420px;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    min-height: unset;
+    max-height: none;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .skeleton-hero {
+    margin-top: 0;
   }
 }
 

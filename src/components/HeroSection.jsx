@@ -28,7 +28,7 @@ export default function HeroSection({ movie, genres = [], onWatchTrailer }) {
         {backdrop && (
           <img
             src={backdrop}
-            alt=""
+            alt={movie.title || 'Movie Banner'}
             className={`hero__backdrop-img${imgLoaded ? ' hero__backdrop-img--loaded' : ''}`}
             onLoad={() => setImgLoaded(true)}
           />
