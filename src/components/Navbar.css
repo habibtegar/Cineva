@@ -446,6 +446,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .navbar__profile-name {
@@ -455,11 +457,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 165px;
 }
 
 .navbar__profile-status {
   font-size: 0.75rem;
   color: #a1a1aa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 165px;
 }
 
 .navbar__profile-divider {
@@ -911,17 +918,24 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .navbar__drawer-user-name {
   font-size: 0.88rem;
   font-weight: 600;
   color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .navbar__drawer-user-status {
   font-size: 0.72rem;
   color: #a1a1aa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .navbar__drawer-login-btn {

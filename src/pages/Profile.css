@@ -112,6 +112,32 @@
   align-items: center;
 }
 
+.profile-header__edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.profile-header__edit-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.profile-header__edit-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
 .profile-header__signout-btn {
   display: inline-flex;
   align-items: center;
@@ -246,7 +272,11 @@
   }
   .profile-header__actions {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
+  .profile-header__edit-btn,
   .profile-header__signout-btn {
     width: 100%;
     justify-content: center;

@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -9,10 +9,15 @@ import MovieDetail from './pages/MovieDetail';
 import PersonDetail from './pages/PersonDetail';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
+import Login from './pages/Login';
 import { useFavorites } from './hooks/useFavorites';
 
 export default function App() {
-  const { favorites, isFavorite, toggleFavorite } = useFavorites();
+  const location = useLocation();
+  const { favorites, isFavorite, toggleFavorite, loading } = useFavorites();
+
+  // Sembunyikan Navbar dan Footer saat pengguna berada di halaman login
+  const isAuthPage = location.pathname.startsWith('/login');
 
   return (
     <>
@@ -44,7 +49,7 @@ export default function App() {
         }}
       />
       <ScrollToTop />
-      <Navbar />
+      {!isAuthPage && <Navbar />}
       <main>
         <Routes>
           <Route
@@ -94,12 +99,14 @@ export default function App() {
                 favorites={favorites}
                 toggleFavorite={toggleFavorite}
                 isFavorite={isFavorite}
+                loading={loading}
               />
             }
           />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </main>
-      <Footer />
+      {!isAuthPage && <Footer />}
     </>
   );
 }

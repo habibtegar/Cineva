@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updateProfile,
 } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../services/firebase';
 import { AuthContext } from './AuthContext';
+import { getAuthErrorMessage } from '../utils/authErrors';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -19,7 +23,7 @@ export function AuthProvider({ children }) {
       if (currentUser) {
         setUser({
           uid: currentUser.uid,
-          displayName: currentUser.displayName || 'User',
+          displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
           email: currentUser.email || '',
           photoURL: currentUser.photoURL || '',
         });
@@ -31,6 +35,52 @@ export function AuthProvider({ children }) {
 
     return () => unsubscribe();
   }, []);
+
+  const loginWithEmail = async (email, password) => {
+    setError(null);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const loggedUser = result.user;
+      const userData = {
+        uid: loggedUser.uid,
+        displayName: loggedUser.displayName || loggedUser.email?.split('@')[0] || 'User',
+        email: loggedUser.email || '',
+        photoURL: loggedUser.photoURL || '',
+      };
+      setUser(userData);
+      toast.success(`Selamat datang, ${userData.displayName}!`);
+      return userData;
+    } catch (err) {
+      console.error('Email sign-in failed:', err);
+      const friendlyMessage = getAuthErrorMessage(err);
+      setError(friendlyMessage);
+      toast.error(friendlyMessage);
+      throw err;
+    }
+  };
+
+  const registerWithEmail = async (email, password) => {
+    setError(null);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const newUser = result.user;
+      const userData = {
+        uid: newUser.uid,
+        displayName: newUser.displayName || newUser.email?.split('@')[0] || 'User',
+        email: newUser.email || '',
+        photoURL: newUser.photoURL || '',
+      };
+      setUser(userData);
+      toast.success('Pendaftaran berhasil! Akun Anda telah dibuat.');
+      return userData;
+    } catch (err) {
+      console.error('Email registration failed:', err);
+      const friendlyMessage = getAuthErrorMessage(err);
+      setError(friendlyMessage);
+      toast.error(friendlyMessage);
+      throw err;
+    }
+  };
 
   const loginWithGoogle = async () => {
     setError(null);
@@ -46,7 +96,7 @@ export function AuthProvider({ children }) {
       const loggedUser = result.user;
       const userData = {
         uid: loggedUser.uid,
-        displayName: loggedUser.displayName || 'User',
+        displayName: loggedUser.displayName || loggedUser.email?.split('@')[0] || 'User',
         email: loggedUser.email || '',
         photoURL: loggedUser.photoURL || '',
       };
@@ -59,11 +109,27 @@ export function AuthProvider({ children }) {
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Login dibatalkan oleh pengguna.');
       } else {
-        setError(err.message || 'Gagal login dengan Google.');
-        toast.error(`Login gagal: ${err.message || 'Periksa konfigurasi Firebase Anda.'}`);
+        const friendlyMessage = getAuthErrorMessage(err);
+        setError(friendlyMessage);
+        toast.error(friendlyMessage);
       }
       throw err;
     }
+  };
+
+  const updateUserProfile = async ({ displayName, photoURL }) => {
+    if (!auth.currentUser) {
+      throw new Error('Pengguna tidak terautentikasi.');
+    }
+    await updateProfile(auth.currentUser, {
+      displayName: displayName?.trim() || null,
+      photoURL: photoURL?.trim() || null,
+    });
+    setUser((prev) => ({
+      ...prev,
+      displayName: displayName?.trim() || prev?.displayName || 'User',
+      photoURL: photoURL?.trim() || '',
+    }));
   };
 
   const logout = async () => {
@@ -86,7 +152,10 @@ export function AuthProvider({ children }) {
         user,
         loading,
         error,
+        loginWithEmail,
+        registerWithEmail,
         loginWithGoogle,
+        updateUserProfile,
         logout,
       }}
     >
@@ -94,3 +163,4 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
