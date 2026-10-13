@@ -24,8 +24,11 @@ const fetchFromTMDB = async (endpoint, params = {}) => {
 };
 
 /** Movie lists */
-export const getTrending = (timeWindow = 'week', page = 1) =>
-  fetchFromTMDB(`/trending/movie/${timeWindow}`, { page });
+export const getTrending = (timeWindowOrPage = 'week', page = 1) => {
+  const timeWindow = typeof timeWindowOrPage === 'string' ? timeWindowOrPage : 'week';
+  const targetPage = typeof timeWindowOrPage === 'number' ? timeWindowOrPage : page;
+  return fetchFromTMDB(`/trending/movie/${timeWindow}`, { page: targetPage });
+};
 
 export const getPopular = (page = 1) =>
   fetchFromTMDB('/movie/popular', { page });

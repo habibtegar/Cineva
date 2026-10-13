@@ -161,11 +161,19 @@ export function AuthProvider({ children }) {
       displayName: displayName?.trim() || null,
       photoURL: photoURL?.trim() || null,
     });
-    setUser((prev) => ({
-      ...prev,
-      displayName: displayName?.trim() || prev?.displayName || 'User',
-      photoURL: photoURL?.trim() || '',
-    }));
+    try {
+      await auth.currentUser.reload();
+    } catch (reloadErr) {
+      console.warn('Peringatan reload currentUser:', reloadErr);
+    }
+    const current = auth.currentUser;
+    setUser({
+      uid: current.uid,
+      displayName: displayName?.trim() || current.displayName || 'User',
+      email: current.email || '',
+      photoURL: photoURL !== undefined ? (photoURL?.trim() || '') : (current.photoURL || ''),
+      emailVerified: current.emailVerified,
+    });
   };
 
   const logout = async () => {

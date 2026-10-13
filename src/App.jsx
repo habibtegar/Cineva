@@ -118,6 +118,7 @@ export default function App() {
                 favorites={favorites}
                 toggleFavorite={toggleFavorite}
                 isFavorite={isFavorite}
+                loading={loading}
               />
             }
           />

@@ -71,6 +71,11 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Dynamic Document Title: ubah judul tab browser untuk halaman Login / Register
+  useEffect(() => {
+    document.title = isLoginMode ? 'Login - Cineva' : 'Register - Cineva';
+  }, [isLoginMode]);
+
   const from = location.state?.from?.pathname || '/';
 
   // Cegah auto-redirect ke dashboard jika belum terverifikasi

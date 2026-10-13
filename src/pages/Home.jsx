@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import HeroSection from '../components/HeroSection';
 import MovieGrid from '../components/MovieGrid';
 import MovieCardSkeleton from '../components/MovieCardSkeleton';
@@ -31,10 +31,10 @@ export default function Home({ toggleFavorite, isFavorite }) {
   const [heroTrailerKey, setHeroTrailerKey] = useState(null);
   const [trailerOpen, setTrailerOpen] = useState(false);
 
-  // All category data
-  const [allMovies, setAllMovies] = useState({
-    trending: [], popular: [], topRated: [], upcoming: [],
-  });
+  // Daftar film (movies) & State Halaman (page)
+  const [movies, setMovies] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Active category tab
   const [activeTab, setActiveTab] = useState('trending');
@@ -43,13 +43,23 @@ export default function Home({ toggleFavorite, isFavorite }) {
   const [genres, setGenres] = useState([]);
   const [activeGenre, setActiveGenre] = useState('');
 
-  // Per-tab page (for Load More)
-  const [tabPage, setTabPage] = useState({ trending: 1, popular: 1, topRated: 1, upcoming: 1 });
-
-  // Global load state
+  // Global load & pagination state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Dynamic Document Title: ubah judul tab browser untuk halaman Home
+  useEffect(() => {
+    document.title = 'Home - Cineva';
+  }, []);
+
+  // Fetch official TMDB genre list on mount
+  useEffect(() => {
+    getGenres()
+      .then((data) => setGenres(data.genres || []))
+      .catch((err) => console.error('Failed to fetch genres:', err));
+  }, []);
 
   // Fetch hero trailer key once hero is set
   useEffect(() => {
@@ -62,76 +72,75 @@ export default function Home({ toggleFavorite, isFavorite }) {
       .catch(() => {});
   }, [hero]);
 
-  // Initial data fetch
-  const fetchData = useCallback(() => {
-    setLoading(true);
-    setError(null);
+  // Fetch movies whenever activeTab, page, or retryCount changes
+  useEffect(() => {
+    let isCancelled = false;
 
-    Promise.all([
-      getTrending(),
-      getPopular(),
-      getTopRated(),
-      getUpcoming(),
-      getGenres(),
-    ])
-      .then(([trendingData, popularData, topRatedData, upcomingData, genreData]) => {
-        const trending = trendingData.results || [];
-        // Pilih film acak dari daftar trending untuk banner Hero
-        const randomIndex = trending.length > 0 ? Math.floor(Math.random() * trending.length) : 0;
-        const randomMovie = trending[randomIndex] || null;
-        setHero(randomMovie);
-        setAllMovies({
-          trending,
-          popular: popularData.results || [],
-          topRated: topRatedData.results || [],
-          upcoming: upcomingData.results || [],
-        });
-        setGenres(genreData.genres || []);
-      })
-      .catch((err) => {
+    const fetchCategoryMovies = async () => {
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      setError(null);
+
+      try {
+        const fetchFn = {
+          trending: (p) => getTrending('week', p),
+          popular: (p) => getPopular(p),
+          topRated: (p) => getTopRated(p),
+          upcoming: (p) => getUpcoming(p),
+        }[activeTab] || getPopular;
+
+        // Parameter API: Pemanggilan API TMDB dengan parameter halaman dinamis (&page=${page})
+        const data = await fetchFn(page);
+        if (isCancelled) return;
+
+        // Penggabungan Array (Append):
+        // Saat hasil fetch berhasil, jangan langsung menimpa state film lama. Gunakan logika spread operator
+        setMovies((prevMovies) => (page === 1 ? (data.results || []) : [...prevMovies, ...(data.results || [])]));
+        setTotalPages(data.total_pages || 1);
+
+        // Pilih film acak dari hasil fetch untuk banner Hero jika belum di-set
+        if (!hero && data.results && data.results.length > 0) {
+          const randomIndex = Math.floor(Math.random() * data.results.length);
+          setHero(data.results[randomIndex]);
+        }
+      } catch (err) {
+        if (isCancelled) return;
         console.error('Failed to fetch movies:', err);
         setError('Failed to load movies. Please check your API key and try again.');
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+      }
+    };
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    fetchCategoryMovies();
 
-  // Load more for current active tab (append next page)
-  const handleLoadMoreTab = async () => {
-    const nextPage = tabPage[activeTab] + 1;
-    setLoadingMore(true);
-    try {
-      const fetchFn = {
-        trending: getTrending,
-        popular: getPopular,
-        topRated: getTopRated,
-        upcoming: getUpcoming,
-      }[activeTab];
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeTab, page, retryCount]);
 
-      const data = activeTab === 'trending'
-        ? await fetchFn('week', nextPage)
-        : await fetchFn(nextPage);
-
-      setAllMovies((prev) => ({
-        ...prev,
-        [activeTab]: [...prev[activeTab], ...(data.results || [])],
-      }));
-      setTabPage((prev) => ({ ...prev, [activeTab]: nextPage }));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingMore(false);
-    }
+  // Ganti tab kategori dan reset halaman ke 1
+  const handleTabChange = (tabKey) => {
+    if (tabKey === activeTab) return;
+    setActiveTab(tabKey);
+    setPage(1);
   };
 
-  // Movies from currently active tab
-  const tabMovies = allMovies[activeTab] || [];
+  // Fungsi Klik: Buat fungsi penanganan tombol yang akan menambah angka halaman
+  const handleLoadMore = () => {
+    setPage((prev) => prev + 1);
+  };
 
-  // Filter active tab's movies by chosen genre
+  // Filter film tab aktif berdasarkan genre terpilih
   const currentMovies = activeGenre
-    ? tabMovies.filter((movie) => movie.genre_ids?.includes(Number(activeGenre)))
-    : tabMovies;
+    ? movies.filter((movie) => movie.genre_ids?.includes(Number(activeGenre)))
+    : movies;
 
   const currentTabLabel = TABS.find((t) => t.key === activeTab)?.label || '';
   const currentGenreLabel = genres.find((g) => g.id === Number(activeGenre))?.name || '';
@@ -144,7 +153,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
   if (error) {
     return (
       <div className="page-container" style={{ paddingTop: 80 }}>
-        <ErrorState message={error} onRetry={fetchData} />
+        <ErrorState message={error} onRetry={() => { setError(null); setPage(1); setRetryCount((c) => c + 1); }} />
       </div>
     );
   }
@@ -152,7 +161,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
   return (
     <div className="home">
       {/* Hero */}
-      {loading ? (
+      {loading && page === 1 ? (
         <SkeletonHero />
       ) : (
         <HeroSection
@@ -173,7 +182,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
                 role="tab"
                 aria-selected={activeTab === tab.key}
                 className={`home__tab${activeTab === tab.key ? ' home__tab--active' : ''}`}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => handleTabChange(tab.key)}
               >
                 {tab.label}
               </button>
@@ -215,7 +224,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
         </div>
 
         {/* ---- Movie section ---- */}
-        {loading ? (
+        {loading && page === 1 ? (
           <section className="movie-grid">
             <div className="movie-grid__list">
               {Array.from({ length: PAGE_SIZE }).map((_, index) => (
@@ -233,19 +242,24 @@ export default function Home({ toggleFavorite, isFavorite }) {
             />
 
             {/* Load More */}
-            <div className="home__load-more">
-              <button
-                className="home__load-btn"
-                onClick={handleLoadMoreTab}
-                disabled={loadingMore}
-              >
-                {loadingMore ? (
-                  <span className="home__load-spinner" />
-                ) : (
-                  'Load More'
-                )}
-              </button>
-            </div>
+            {page < totalPages && (
+              <div className="home__load-more">
+                <button
+                  className="home__load-btn"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="home__load-spinner" />
+                      <span>Loading...</span>
+                    </span>
+                  ) : (
+                    'Load More'
+                  )}
+                </button>
+              </div>
+            )}
           </>
         ) : (
           /* Empty state when genre filter finds no movies in this tab */

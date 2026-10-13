@@ -45,6 +45,16 @@ export default function Search({ toggleFavorite, isFavorite }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const abortRef = useRef(null);
 
+  // Dynamic Document Title: ubah judul tab browser untuk halaman Search
+  useEffect(() => {
+    const query = (urlQuery || inputValue).trim();
+    if (query) {
+      document.title = `Search: ${query} - Cineva`;
+    } else {
+      document.title = 'Search Movies - Cineva';
+    }
+  }, [urlQuery, inputValue]);
+
   // Fetch official TMDB genre list on mount
   useEffect(() => {
     getGenres()
@@ -138,8 +148,9 @@ export default function Search({ toggleFavorite, isFavorite }) {
       if (trimmed && selectedGenre) {
         newMovies = newMovies.filter((m) => m.genre_ids?.includes(Number(selectedGenre)));
       }
-      setResults((prev) => [...prev, ...newMovies]);
-      setPage(nextPage);
+      // Penggabungan Array (Append): Gabungkan film lama dengan film baru menggunakan spread operator
+      setResults((prevMovies) => (nextPage === 1 ? newMovies : [...prevMovies, ...newMovies]));
+      setPage((prev) => prev + 1);
     } catch (e) {
       console.error(e);
     } finally {
@@ -151,6 +162,8 @@ export default function Search({ toggleFavorite, isFavorite }) {
   const hasMore = page < totalPages;
   const selectedGenreName = genres.find((g) => String(g.id) === String(selectedGenre))?.name || '';
   const hasActiveFilterOrQuery = Boolean(trimmedUrl || selectedGenre || selectedYear);
+  const movies = results;
+  const isLoading = loading;
 
   return (
     <div className="search-page page-container">
@@ -258,7 +271,7 @@ export default function Search({ toggleFavorite, isFavorite }) {
 
       {error && <ErrorState message={error} />}
 
-      {loading ? (
+      {isLoading ? (
         <section className="movie-grid">
           <div className="movie-grid__list">
             {Array.from({ length: 12 }).map((_, index) => (
@@ -266,10 +279,10 @@ export default function Search({ toggleFavorite, isFavorite }) {
             ))}
           </div>
         </section>
-      ) : results.length > 0 ? (
+      ) : movies.length > 0 ? (
         <>
           <MovieGrid
-            movies={results}
+            movies={movies}
             onToggleFavorite={toggleFavorite}
             isFavorite={isFavorite}
           />
@@ -280,22 +293,40 @@ export default function Search({ toggleFavorite, isFavorite }) {
                 onClick={handleLoadMore}
                 disabled={loadingMore}
               >
-                {loadingMore
-                  ? <span className="search-page__spinner" />
-                  : 'Load More'}
+                {loadingMore ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="search-page__spinner" />
+                    <span>Loading...</span>
+                  </span>
+                ) : (
+                  'Load More'
+                )}
               </button>
             </div>
           )}
         </>
       ) : (
-        hasActiveFilterOrQuery && !error && (
-          <div className="search-page__empty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <p>Tidak ada film ditemukan</p>
-            <span>Coba kata kunci lain atau sesuaikan kombinasi filter genre dan tahun rilis.</span>
+        !isLoading && !error && movies.length === 0 && (
+          <div className="flex flex-col items-center justify-center mt-20 text-center">
+            <div className="w-16 h-16 mb-4 rounded-full bg-zinc-800/60 flex items-center justify-center text-gray-500">
+              {/* Ikon pencarian coret */}
+              <svg
+                className="w-8 h-8 text-gray-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                <line x1="4" y1="4" x2="18" y2="18" />
+              </svg>
+            </div>
+            <p className="text-gray-400 text-base md:text-lg">
+              Ups, film yang Anda cari tidak ditemukan.
+            </p>
           </div>
         )
       )}

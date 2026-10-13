@@ -33,11 +33,13 @@ export default function HeroSection({ movie, genres = [], onWatchTrailer }) {
             onLoad={() => setImgLoaded(true)}
           />
         )}
+        {/* Overlay gradien dari bawah */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-black/60 to-transparent pointer-events-none" />
         <div className="hero__gradient-side" />
         <div className="hero__gradient-bottom" />
       </div>
 
-      <div className="hero__content">
+      <div className="hero__content relative z-10">
         <div className="hero__badges">
           {year && <span className="hero__badge">{year}</span>}
           {rating && (

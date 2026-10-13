@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../services/firebase';
 import { searchMovies, getImageUrl } from '../services/tmdb';
 import { useAuth } from '../hooks/useAuth';
 import './Navbar.css';
@@ -17,7 +19,35 @@ function useDebounce(value, delay) {
 }
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user: authUser, logout } = useAuth();
+  const [currentUser, setCurrentUser] = useState(authUser);
+
+  // Sinkronkan dengan context user jika authUser berubah
+  useEffect(() => {
+    setCurrentUser(authUser);
+  }, [authUser]);
+
+  // Dengarkan perubahan data user secara langsung menggunakan listener onAuthStateChanged dari Firebase
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setCurrentUser({
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          email: firebaseUser.email || '',
+          photoURL: firebaseUser.photoURL || '',
+          emailVerified: firebaseUser.emailVerified,
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const user = currentUser ?? authUser;
+
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -25,10 +55,15 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [brokenAvatarUrl, setBrokenAvatarUrl] = useState(null);
-  const avatarImgError = Boolean(brokenAvatarUrl && brokenAvatarUrl === user?.photoURL);
 
+  // Reset status avatar rusak jika URL foto user diperbarui
+  useEffect(() => {
+    setBrokenAvatarUrl(null);
+  }, [user?.photoURL]);
+
+  const avatarImgError = Boolean(brokenAvatarUrl && brokenAvatarUrl === user?.photoURL);
   const userInitial = (user?.displayName || user?.email || 'U').charAt(0).toUpperCase();
 
   const navigate = useNavigate();
@@ -116,11 +151,15 @@ export default function Navbar() {
     setQuery('');
   }, [location.pathname, location.search]);
 
-  // Scroll detection
+  // Scroll detection: deteksi apakah layar sudah di-scroll (window.scrollY > 10)
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Lock body scroll when drawer is open
@@ -167,7 +206,13 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
+      <nav
+        className={`navbar fixed top-0 w-full z-50 transition-all duration-300 ${
+          isScrolled
+            ? 'bg-[#0f0f0f] border-b border-gray-800'
+            : 'bg-transparent border-b border-transparent'
+        }`}
+      >
         <div className="navbar__inner flex justify-between items-center w-full">
           {/* Logo */}
           <Link to="/" className="navbar__logo">

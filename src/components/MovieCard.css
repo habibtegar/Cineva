@@ -7,14 +7,6 @@
   border-radius: 8px;
   overflow: hidden;
   background-color: #111118;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.movie-card:hover {
-  transform: translateY(-5px) scale(1.012);
-  box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 /* ---- Poster link ---- */

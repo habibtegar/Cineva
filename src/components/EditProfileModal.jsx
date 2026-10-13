@@ -233,12 +233,8 @@ export default function EditProfileModal({ isOpen, onClose }) {
       toast.success('Profil berhasil diperbarui!');
       console.log('=== [SIMPAN PROFIL BERHASIL] ===');
 
+      // Cukup tutup modal Edit Profil tanpa hard reload (mencegah splash screen muncul kembali)
       onClose();
-
-      // Refresh halaman untuk sinkronisasi seketika di seluruh halaman
-      setTimeout(() => {
-        window.location.reload();
-      }, 400);
     } catch (error) {
       console.error('Detail Error Simpan Profil:', error);
       toast.error(error.message || 'Gagal menyimpan profil.');

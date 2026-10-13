@@ -176,6 +176,17 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
     window.scrollTo(0, 0);
   }, [id]);
 
+  // Dynamic Document Title: pantau perubahan data film dan ubah judul tab browser
+  useEffect(() => {
+    if (movie?.title) {
+      document.title = `${movie.title} - Cineva`;
+    }
+
+    return () => {
+      document.title = 'Cineva';
+    };
+  }, [movie]);
+
   if (loading) return <SkeletonDetail />;
 
   if (error) {

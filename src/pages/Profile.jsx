@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import { SkeletonCard } from '../components/Skeleton';
@@ -18,6 +18,17 @@ export default function Profile({
   const fallbackFavoritesHook = useFavorites();
   const navigate = useNavigate();
   const [brokenAvatarUrl, setBrokenAvatarUrl] = useState(null);
+
+  // Reset status avatar rusak jika photoURL pengguna diperbarui
+  useEffect(() => {
+    setBrokenAvatarUrl(null);
+  }, [user?.photoURL]);
+
+  // Dynamic Document Title: ubah judul tab browser untuk halaman Profile
+  useEffect(() => {
+    document.title = 'My Profile - Cineva';
+  }, []);
+
   const avatarError = Boolean(brokenAvatarUrl && brokenAvatarUrl === user?.photoURL);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
