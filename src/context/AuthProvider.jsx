@@ -7,10 +7,12 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../services/firebase';
 import { AuthContext } from './AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrors';
+import { isDisposableEmail } from '../utils/disposableEmail';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -21,11 +23,23 @@ export function AuthProvider({ children }) {
     // Listen for auth state changes (persists user session on reload)
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
+        const isGoogle = currentUser.providerData?.some(
+          (p) => p.providerId === 'google.com'
+        );
+        // User yang mendaftar via email/password harus sudah verifikasi email
+        if (!isGoogle && !currentUser.emailVerified) {
+          signOut(auth);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
         setUser({
           uid: currentUser.uid,
           displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
           email: currentUser.email || '',
           photoURL: currentUser.photoURL || '',
+          emailVerified: currentUser.emailVerified,
         });
       } else {
         setUser(null);
@@ -39,8 +53,22 @@ export function AuthProvider({ children }) {
   const loginWithEmail = async (email, password) => {
     setError(null);
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email.trim(), password);
       const loggedUser = result.user;
+
+      if (!loggedUser.emailVerified) {
+        if (typeof auth.signOut === 'function') {
+          await auth.signOut();
+        } else {
+          await signOut(auth);
+        }
+        setUser(null);
+        const errMsg = 'Email belum diverifikasi. Cek inbox kamu!';
+        setError(errMsg);
+        toast.error(errMsg);
+        return null;
+      }
+
       const userData = {
         uid: loggedUser.uid,
         displayName: loggedUser.displayName || loggedUser.email?.split('@')[0] || 'User',
@@ -61,18 +89,25 @@ export function AuthProvider({ children }) {
 
   const registerWithEmail = async (email, password) => {
     setError(null);
+    const trimmedEmail = email?.trim() || '';
+    if (isDisposableEmail(trimmedEmail)) {
+      const errMsg = 'Domain email tidak diizinkan. Gunakan email asli!';
+      setError(errMsg);
+      toast.error(errMsg);
+      return null;
+    }
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const result = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
       const newUser = result.user;
-      const userData = {
-        uid: newUser.uid,
-        displayName: newUser.displayName || newUser.email?.split('@')[0] || 'User',
-        email: newUser.email || '',
-        photoURL: newUser.photoURL || '',
-      };
-      setUser(userData);
-      toast.success('Pendaftaran berhasil! Akun Anda telah dibuat.');
-      return userData;
+      await sendEmailVerification(newUser);
+      toast.success('Pendaftaran berhasil! Cek inbox email kamu untuk verifikasi sebelum login.');
+      if (typeof auth.signOut === 'function') {
+        await auth.signOut();
+      } else {
+        await signOut(auth);
+      }
+      setUser(null);
+      return null;
     } catch (err) {
       console.error('Email registration failed:', err);
       const friendlyMessage = getAuthErrorMessage(err);

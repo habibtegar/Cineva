@@ -4,18 +4,63 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
+  signOut,
 } from 'firebase/auth';
 import toast from 'react-hot-toast';
 import { auth } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { getAuthErrorMessage } from '../utils/authErrors';
 
+// Daftar domain email sampah (disposable / temporary email)
+const DISPOSABLE_DOMAINS = [
+  'mailinator.com',
+  'tempmail.com',
+  '10minutemail.com',
+  'guerrillamail.com',
+  'throwawaymail.com',
+  'fake.com',
+  'temp-mail.org',
+  'guerrillamail.net',
+  'guerrillamail.org',
+  'guerrillamail.biz',
+  'guerrillamailblock.com',
+  'yopmail.com',
+  'yopmail.fr',
+  'yopmail.net',
+  'dispostable.com',
+  'sharklasers.com',
+  'trashmail.com',
+  'trashmail.net',
+  'trashmail.me',
+  'grr.la',
+  'nada.ltd',
+  'getnada.com',
+  'mohmal.com',
+  'fakemailgenerator.com',
+  'burnermail.io',
+  'maildrop.cc',
+  'inboxkitten.com',
+  'crazymailing.com',
+  'mytemp.email',
+  '10mail.org',
+  'dropmail.me',
+  'getairmail.com',
+  'emailondeck.com',
+  'tempinbox.com',
+  'generator.email',
+  'mintemail.com',
+  'spam4.me',
+  'tempr.email',
+  'discard.email',
+];
+
 export default function Login() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
 
@@ -25,9 +70,9 @@ export default function Login() {
 
   const from = location.state?.from?.pathname || '/';
 
-  // If already logged in, redirect away from login page
+  // Cegah auto-redirect ke dashboard jika belum terverifikasi
   useEffect(() => {
-    if (user) {
+    if (user && user.emailVerified) {
       navigate(from, { replace: true });
     }
   }, [user, navigate, from]);
@@ -41,6 +86,16 @@ export default function Login() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
       toast.error('Format email tidak valid.');
+      return false;
+    }
+    const domain = trimmedEmail.toLowerCase().split('@')[1];
+    if (
+      !isLoginMode &&
+      domain &&
+      (DISPOSABLE_DOMAINS.includes(domain) ||
+        DISPOSABLE_DOMAINS.some((d) => domain.endsWith('.' + d)))
+    ) {
+      toast.error('Domain email tidak diizinkan. Gunakan email asli!');
       return false;
     }
     if (!password) {
@@ -59,13 +114,25 @@ export default function Login() {
     if (e) e.preventDefault();
     if (!validateInputs()) return;
 
-    setIsSubmitting(true);
+    setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email.trim(),
         password
       );
+
+      // Blokir Saat Sign In jika belum diverifikasi
+      if (!userCredential.user.emailVerified) {
+        if (typeof auth.signOut === 'function') {
+          await auth.signOut();
+        } else {
+          await signOut(auth);
+        }
+        toast.error('Email belum diverifikasi. Cek inbox kamu!');
+        return;
+      }
+
       const name =
         userCredential.user.displayName ||
         userCredential.user.email?.split('@')[0] ||
@@ -76,33 +143,61 @@ export default function Login() {
       console.error('Sign In error:', err);
       toast.error(getAuthErrorMessage(err));
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
   // Sign Up handler
   const handleSignUp = async (e) => {
     if (e) e.preventDefault();
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const domain = trimmedEmail.split('@')[1];
+
+    // Cegat di Paling Awal: Sebelum panggil fungsi Firebase apa pun di handler Sign Up
+    if (
+      domain &&
+      (DISPOSABLE_DOMAINS.includes(domain) ||
+        DISPOSABLE_DOMAINS.some((d) => domain.endsWith('.' + d)))
+    ) {
+      toast.error('Domain email tidak diizinkan. Gunakan email asli!');
+      return;
+    }
+
     if (!validateInputs()) return;
 
-    setIsSubmitting(true);
+    // Loading State aktif saat tombol ditekan
+    setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        email.trim(),
+        trimmedEmail,
         password
       );
-      const name =
-        userCredential.user.displayName ||
-        userCredential.user.email?.split('@')[0] ||
-        'User';
-      toast.success(`Pendaftaran berhasil! Selamat datang di Cineva, ${name}.`);
-      navigate(from, { replace: true });
+
+      // Kirim email verifikasi
+      await sendEmailVerification(userCredential.user);
+
+      // Langsung paksa keluar agar tidak auto-login
+      if (typeof auth.signOut === 'function') {
+        await auth.signOut();
+      } else {
+        await signOut(auth);
+      }
+
+      // Tampilkan notifikasi
+      toast.success(
+        'Pendaftaran berhasil! Cek inbox email kamu untuk verifikasi sebelum login.'
+      );
+
+      // Pindahkan tampilan kembali ke form Sign In (bukan langsung masuk ke dashboard)
+      setPassword('');
+      setIsLoginMode(true);
     } catch (err) {
       console.error('Sign Up error:', err);
       toast.error(getAuthErrorMessage(err));
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -144,7 +239,7 @@ export default function Login() {
     }
   };
 
-  const isAnyLoading = isSubmitting || isLoadingGoogle || isSendingReset;
+  const isAnyLoading = isLoading || isLoadingGoogle || isSendingReset;
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-12 bg-[#141414] overflow-hidden select-none">
@@ -316,10 +411,10 @@ export default function Login() {
               disabled={isAnyLoading}
               className="w-full bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-medium text-sm py-3 px-4 rounded-xl shadow-lg shadow-red-950/50 hover:shadow-red-900/50 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
+              {isLoading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>{isLoginMode ? 'Signing In...' : 'Signing Up...'}</span>
+                  <span>{isLoginMode ? 'Signing In...' : 'Mendaftarkan...'}</span>
                 </>
               ) : (
                 <span>{isLoginMode ? 'Sign In' : 'Sign Up'}</span>
