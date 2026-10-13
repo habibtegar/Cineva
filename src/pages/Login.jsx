@@ -63,6 +63,9 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const { user, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -76,6 +79,17 @@ export default function Login() {
       navigate(from, { replace: true });
     }
   }, [user, navigate, from]);
+
+  // Hitung mundur jeda waktu (cooldown) kirim ulang email
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const validateInputs = () => {
     const trimmedEmail = email.trim();
@@ -129,7 +143,8 @@ export default function Login() {
         } else {
           await signOut(auth);
         }
-        toast.error('Email belum diverifikasi. Cek inbox kamu!');
+        setUnverifiedEmail(email.trim());
+        toast.error('Email belum diverifikasi. Cek inbox atau folder Spam di Gmail kamu!');
         return;
       }
 
@@ -185,19 +200,70 @@ export default function Login() {
         await signOut(auth);
       }
 
+      setUnverifiedEmail(trimmedEmail);
+
       // Tampilkan notifikasi
       toast.success(
-        'Pendaftaran berhasil! Cek inbox email kamu untuk verifikasi sebelum login.'
+        'Pendaftaran berhasil! Cek folder Inbox atau Spam di Gmail kamu untuk verifikasi sebelum login.',
+        { duration: 6000 }
       );
 
       // Pindahkan tampilan kembali ke form Sign In (bukan langsung masuk ke dashboard)
       setPassword('');
       setIsLoginMode(true);
+      setResendCooldown(60);
     } catch (err) {
       console.error('Sign Up error:', err);
       toast.error(getAuthErrorMessage(err));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Resend Email Verification handler
+  const handleResendVerification = async () => {
+    const targetEmail = (unverifiedEmail || email).trim();
+    if (!targetEmail) {
+      toast.error('Harap masukkan alamat email Anda.');
+      return;
+    }
+    if (!password) {
+      toast.error('Masukkan password Anda untuk mengirim ulang verifikasi.');
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        targetEmail,
+        password
+      );
+
+      if (userCredential.user.emailVerified) {
+        toast.success('Email sudah diverifikasi! Anda berhasil masuk.');
+        setUnverifiedEmail(null);
+        navigate(from, { replace: true });
+        return;
+      }
+
+      await sendEmailVerification(userCredential.user);
+      if (typeof auth.signOut === 'function') {
+        await auth.signOut();
+      } else {
+        await signOut(auth);
+      }
+
+      toast.success(
+        'Email verifikasi baru berhasil dikirim! Silakan periksa folder Inbox dan Spam di Gmail.',
+        { duration: 5000 }
+      );
+      setResendCooldown(60);
+    } catch (err) {
+      console.error('Resend verification error:', err);
+      toast.error(getAuthErrorMessage(err));
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -239,7 +305,7 @@ export default function Login() {
     }
   };
 
-  const isAnyLoading = isLoading || isLoadingGoogle || isSendingReset;
+  const isAnyLoading = isLoading || isLoadingGoogle || isSendingReset || isResending;
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-12 bg-[#141414] overflow-hidden select-none">
@@ -266,6 +332,64 @@ export default function Login() {
               : 'Mulai buat akun Cineva Anda hanya dalam hitungan detik'}
           </p>
         </div>
+
+        {/* Unverified Email Alert Banner */}
+        {unverifiedEmail && isLoginMode && (
+          <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-semibold text-amber-300 text-sm">
+                <svg
+                  className="w-4 h-4 shrink-0 text-amber-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <span>Verifikasi Email Diperlukan</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUnverifiedEmail(null)}
+                className="text-zinc-400 hover:text-zinc-200 transition text-sm leading-none p-1 cursor-pointer"
+                aria-label="Tutup notifikasi"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-zinc-300 leading-relaxed text-xs">
+              Tautan verifikasi telah dikirim ke{' '}
+              <span className="font-semibold text-white">{unverifiedEmail}</span>.
+            </p>
+
+            <div className="pt-0.5 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-zinc-400">Belum menerima email?</span>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isAnyLoading || resendCooldown > 0}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-medium transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                {isResending ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-amber-200/30 border-t-amber-200 rounded-full animate-spin" />
+                    <span>Mengirim...</span>
+                  </>
+                ) : resendCooldown > 0 ? (
+                  <span>Kirim Ulang ({resendCooldown}s)</span>
+                ) : (
+                  <span>Kirim Ulang Email</span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Email & Password Form */}
         <form onSubmit={isLoginMode ? handleSignIn : handleSignUp} className="space-y-4">
@@ -318,14 +442,25 @@ export default function Login() {
                 Password
               </label>
               {isLoginMode && (
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={isAnyLoading}
-                  className="text-xs text-red-500 hover:text-red-400 font-medium transition cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSendingReset ? 'Mengirim link...' : 'Lupa Password?'}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUnverifiedEmail(email.trim() || 'email akun Anda');
+                    }}
+                    className="text-xs text-zinc-400 hover:text-amber-400 transition cursor-pointer hover:underline"
+                  >
+                    Bantuan Verifikasi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={isAnyLoading}
+                    className="text-xs text-red-500 hover:text-red-400 font-medium transition cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSendingReset ? 'Mengirim link...' : 'Lupa Password?'}
+                  </button>
+                </div>
               )}
             </div>
             <div className="relative">

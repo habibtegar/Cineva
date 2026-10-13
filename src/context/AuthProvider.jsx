@@ -28,7 +28,6 @@ export function AuthProvider({ children }) {
         );
         // User yang mendaftar via email/password harus sudah verifikasi email
         if (!isGoogle && !currentUser.emailVerified) {
-          signOut(auth);
           setUser(null);
           setLoading(false);
           return;
@@ -63,7 +62,7 @@ export function AuthProvider({ children }) {
           await signOut(auth);
         }
         setUser(null);
-        const errMsg = 'Email belum diverifikasi. Cek inbox kamu!';
+        const errMsg = 'Email belum diverifikasi. Cek inbox atau folder Spam Gmail kamu!';
         setError(errMsg);
         toast.error(errMsg);
         return null;
@@ -100,7 +99,9 @@ export function AuthProvider({ children }) {
       const result = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
       const newUser = result.user;
       await sendEmailVerification(newUser);
-      toast.success('Pendaftaran berhasil! Cek inbox email kamu untuk verifikasi sebelum login.');
+      toast.success('Pendaftaran berhasil! Cek folder Inbox atau Spam di Gmail kamu untuk verifikasi sebelum login.', {
+        duration: 5000,
+      });
       if (typeof auth.signOut === 'function') {
         await auth.signOut();
       } else {
