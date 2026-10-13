@@ -5,7 +5,8 @@ import MovieGrid from '../components/MovieGrid';
 import TrailerModal from '../components/TrailerModal';
 import { SkeletonDetail } from '../components/Skeleton';
 import ErrorState from '../components/ErrorState';
-import { getMovieDetail, getBackdropUrl, getImageUrl } from '../services/tmdb';
+import { getMovieDetail, getBackdropUrl, getImageUrl, getTrailerVideo } from '../services/tmdb';
+import toast from 'react-hot-toast';
 import './MovieDetail.css';
 
 // Avatar helper for reviews
@@ -121,21 +122,40 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
   };
 
   const handleShare = async () => {
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(window.location.href);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = window.location.href;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
+    // 1. Pengecekan API: Cek apakah browser mendukung Web Share API (misal di smartphone/HP)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: movie.title,
+          text: 'Tonton ' + movie.title + ' di Cineva sekarang!',
+          url: window.location.href,
+        });
+      } catch (err) {
+        // Jangan munculkan error jika user sengaja menutup/membatalkan menu share bawaan HP
+        if (err.name !== 'AbortError') {
+          console.error('Error sharing content:', err);
+        }
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
-    } catch (err) {
-      console.error('Failed to copy URL:', err);
+    } else {
+      // 2. Fallback Salin Link (Desktop): Jika navigator.share tidak tersedia (misal di PC/Laptop)
+      try {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(window.location.href);
+        } else {
+          const textArea = document.createElement('textarea');
+          textArea.value = window.location.href;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+        setCopied(true);
+        toast.success('Link film berhasil disalin ke clipboard!');
+        setTimeout(() => setCopied(false), 2200);
+      } catch (err) {
+        console.error('Failed to copy URL:', err);
+        toast.error('Gagal menyalin link.');
+      }
     }
   };
 
@@ -186,9 +206,7 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
     (c) => c.job === 'Screenplay' || c.job === 'Writer' || c.job === 'Story'
   )?.name;
 
-  const trailer = movie.videos?.results?.find(
-    (v) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')
-  );
+  const trailer = getTrailerVideo(movie.videos?.results);
 
   const fav = isFavorite ? isFavorite(movie.id) : false;
 

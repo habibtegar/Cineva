@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
@@ -13,8 +14,36 @@ import Login from './pages/Login';
 import { useFavorites } from './hooks/useFavorites';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const location = useLocation();
   const { favorites, isFavorite, toggleFavorite, loading } = useFavorites();
+
+  // Timer Initial Splash Screen (2 detik)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Tampilan Splash Screen saat pertama kali dimuat
+  if (showSplash) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 select-none overflow-hidden">
+        {/* Glow ambient sinematik */}
+        <div className="absolute w-[420px] h-[420px] bg-red-600/15 rounded-full blur-[140px] pointer-events-none" />
+
+        <div className="relative flex flex-col items-center text-center px-4">
+          <h1 className="text-4xl md:text-6xl font-bold text-red-600 tracking-[0.3em] uppercase drop-shadow-[0_0_35px_rgba(220,38,38,0.65)] animate-pulse">
+            Cineva
+          </h1>
+          <p className="mt-3 text-xs md:text-sm text-zinc-400 font-medium tracking-[0.35em] uppercase opacity-75">
+            Discover Your Next Favorite Film
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Sembunyikan Navbar dan Footer saat pengguna berada di halaman login
   const isAuthPage = location.pathname.startsWith('/login');

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import HeroSection from '../components/HeroSection';
 import MovieGrid from '../components/MovieGrid';
+import MovieCardSkeleton from '../components/MovieCardSkeleton';
 import TrailerModal from '../components/TrailerModal';
-import { SkeletonGrid, SkeletonHero } from '../components/Skeleton';
+import { SkeletonHero } from '../components/Skeleton';
 import ErrorState from '../components/ErrorState';
 import {
   getTrending,
@@ -11,6 +12,7 @@ import {
   getUpcoming,
   getGenres,
   getMovieDetail,
+  getTrailerVideo,
 } from '../services/tmdb';
 import './Home.css';
 
@@ -54,9 +56,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
     if (!hero) return;
     getMovieDetail(hero.id)
       .then((detail) => {
-        const trailer = detail.videos?.results?.find(
-          (v) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')
-        );
+        const trailer = getTrailerVideo(detail.videos?.results);
         setHeroTrailerKey(trailer?.key || null);
       })
       .catch(() => {});
@@ -76,7 +76,10 @@ export default function Home({ toggleFavorite, isFavorite }) {
     ])
       .then(([trendingData, popularData, topRatedData, upcomingData, genreData]) => {
         const trending = trendingData.results || [];
-        setHero(trending[0] || null);
+        // Pilih film acak dari daftar trending untuk banner Hero
+        const randomIndex = trending.length > 0 ? Math.floor(Math.random() * trending.length) : 0;
+        const randomMovie = trending[randomIndex] || null;
+        setHero(randomMovie);
         setAllMovies({
           trending,
           popular: popularData.results || [],
@@ -213,7 +216,13 @@ export default function Home({ toggleFavorite, isFavorite }) {
 
         {/* ---- Movie section ---- */}
         {loading ? (
-          <SkeletonGrid count={PAGE_SIZE} />
+          <section className="movie-grid">
+            <div className="movie-grid__list">
+              {Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                <MovieCardSkeleton key={index} />
+              ))}
+            </div>
+          </section>
         ) : currentMovies.length > 0 ? (
           <>
             <MovieGrid

@@ -47,9 +47,47 @@ export const getMovieDetail = (id) =>
 export const getMovieReviews = (id, page = 1) =>
   fetchFromTMDB(`/movie/${id}/reviews`, { page });
 
+/** Movie videos */
+export const getMovieVideos = (id) =>
+  fetchFromTMDB(`/movie/${id}/videos`);
+
+/**
+ * Filter trailer video with cascading priority:
+ * 1. Official YouTube video with type 'Trailer'
+ * 2. Fallback to YouTube video with type 'Teaser'
+ * 3. Final fallback to any YouTube video available
+ */
+export const getTrailerVideo = (videoResults = []) => {
+  if (!Array.isArray(videoResults) || videoResults.length === 0) return null;
+
+  // 1. Cari video dengan tipe 'Trailer' di YouTube
+  const officialTrailer = videoResults.find(
+    (vid) => vid.site === 'YouTube' && vid.type === 'Trailer'
+  );
+
+  // 2. Fallback (Cadangan): Jika tidak ada tipe 'Trailer', cari tipe 'Teaser'
+  const fallbackVideo = videoResults.find(
+    (vid) => vid.site === 'YouTube' && vid.type === 'Teaser'
+  );
+
+  // 3. Fallback Terakhir: Video YouTube apa saja yang tersedia di index pertama
+  const anyYouTubeVideo = videoResults.find(
+    (vid) => vid.site === 'YouTube'
+  );
+
+  return officialTrailer || fallbackVideo || anyYouTubeVideo || null;
+};
+
 /** Search */
-export const searchMovies = (query, page = 1) =>
-  fetchFromTMDB('/search/movie', { query, page });
+export const searchMovies = (query, page = 1, extraParams = {}) =>
+  fetchFromTMDB('/search/movie', { query, page, ...extraParams });
+
+/** Discover movies with filters */
+export const discoverMovies = (params = {}) =>
+  fetchFromTMDB('/discover/movie', {
+    sort_by: 'popularity.desc',
+    ...params,
+  });
 
 /** Genres */
 export const getGenres = () =>

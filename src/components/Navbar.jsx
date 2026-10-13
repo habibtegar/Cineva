@@ -681,51 +681,6 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Drawer search with live dropdown */}
-        <div className="navbar__drawer-search-wrap">
-          <form className="navbar__drawer-search" onSubmit={handleSearchSubmit}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search movies..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search movies"
-            />
-          </form>
-
-          {/* Drawer Live Search Results */}
-          {query.trim().length >= 2 && searchResults.length > 0 && (
-            <div className="navbar__drawer-results">
-              {searchResults.map((movie) => {
-                const poster = getImageUrl(movie.poster_path, 'w92');
-                const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
-                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
-                return (
-                  <button
-                    key={movie.id}
-                    type="button"
-                    className="navbar__dropdown-item"
-                    onClick={() => handleSelectMovie(movie.id)}
-                  >
-                    {poster && <img src={poster} alt={movie.title} className="navbar__dropdown-poster" />}
-                    <div className="navbar__dropdown-info">
-                      <h4 className="navbar__dropdown-title">{movie.title}</h4>
-                      <div className="navbar__dropdown-meta">
-                        <span className="navbar__dropdown-year">{year}</span>
-                        {rating && <span className="navbar__dropdown-rating">★ {rating}</span>}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
         {/* Mobile user profile bar */}
         <div className="navbar__drawer-user">
           <div className="navbar__avatar navbar__avatar--drawer">

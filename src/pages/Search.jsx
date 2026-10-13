@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MovieGrid from '../components/MovieGrid';
-import { SkeletonGrid } from '../components/Skeleton';
+import MovieCardSkeleton from '../components/MovieCardSkeleton';
 import ErrorState from '../components/ErrorState';
-import { searchMovies } from '../services/tmdb';
+import { searchMovies, getGenres, discoverMovies } from '../services/tmdb';
 import './Search.css';
 
 /**
@@ -18,6 +18,10 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
+// Generate array of years from current year backwards to 2000
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - 2000 + 1 }, (_, i) => String(CURRENT_YEAR - i));
+
 export default function Search({ toggleFavorite, isFavorite }) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -26,6 +30,11 @@ export default function Search({ toggleFavorite, isFavorite }) {
   // Local input state so user can refine query directly on the page
   const [inputValue, setInputValue] = useState(urlQuery);
   const debouncedInput = useDebounce(inputValue, 400);
+
+  // Filter states: genre & year
+  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [genres, setGenres] = useState([]);
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -36,11 +45,17 @@ export default function Search({ toggleFavorite, isFavorite }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const abortRef = useRef(null);
 
+  // Fetch official TMDB genre list on mount
+  useEffect(() => {
+    getGenres()
+      .then((data) => setGenres(data.genres || []))
+      .catch((err) => console.error('Failed to fetch genres:', err));
+  }, []);
+
   // Sync input with URL param when navigating from Navbar
   useEffect(() => {
     setInputValue(urlQuery);
     setPage(1);
-    setResults([]);
   }, [urlQuery]);
 
   // Update URL when debounced input changes (keeps browser history consistent)
@@ -51,10 +66,12 @@ export default function Search({ toggleFavorite, isFavorite }) {
     }
   }, [debouncedInput, navigate, urlQuery]);
 
-  // Fetch results whenever URL query changes
+  // Fetch results whenever URL query OR filters change
   useEffect(() => {
     const trimmed = urlQuery.trim();
-    if (!trimmed) {
+
+    // If no text query and no filter is active, clear results
+    if (!trimmed && !selectedGenre && !selectedYear) {
       setResults([]);
       setTotalResults(0);
       setTotalPages(1);
@@ -70,32 +87,58 @@ export default function Search({ toggleFavorite, isFavorite }) {
     setError(null);
     setPage(1);
 
-    searchMovies(trimmed, 1)
+    const fetchPromise = trimmed
+      ? searchMovies(trimmed, 1, { primary_release_year: selectedYear || undefined })
+      : discoverMovies({
+          with_genres: selectedGenre || undefined,
+          primary_release_year: selectedYear || undefined,
+          page: 1,
+        });
+
+    fetchPromise
       .then((data) => {
         if (!isActive.current) return;
-        setResults(data.results || []);
-        setTotalResults(data.total_results || 0);
+        let movies = data.results || [];
+        if (trimmed && selectedGenre) {
+          movies = movies.filter((m) => m.genre_ids?.includes(Number(selectedGenre)));
+        }
+        setResults(movies);
+        setTotalResults(trimmed && selectedGenre ? movies.length : (data.total_results || 0));
         setTotalPages(data.total_pages || 1);
       })
       .catch((err) => {
         if (!isActive.current) return;
-        console.error('Search failed:', err);
-        setError('Search failed. Please try again.');
+        console.error('Search / Discover failed:', err);
+        setError('Pencarian gagal. Silakan coba lagi.');
       })
       .finally(() => {
         if (isActive.current) setLoading(false);
       });
 
-    return () => { isActive.current = false; };
-  }, [urlQuery]);
+    return () => {
+      isActive.current = false;
+    };
+  }, [urlQuery, selectedGenre, selectedYear]);
 
   // Load more pages
   const handleLoadMore = async () => {
     const nextPage = page + 1;
     setLoadingMore(true);
     try {
-      const data = await searchMovies(urlQuery, nextPage);
-      setResults((prev) => [...prev, ...(data.results || [])]);
+      const trimmed = urlQuery.trim();
+      const data = trimmed
+        ? await searchMovies(trimmed, nextPage, { primary_release_year: selectedYear || undefined })
+        : await discoverMovies({
+            with_genres: selectedGenre || undefined,
+            primary_release_year: selectedYear || undefined,
+            page: nextPage,
+          });
+
+      let newMovies = data.results || [];
+      if (trimmed && selectedGenre) {
+        newMovies = newMovies.filter((m) => m.genre_ids?.includes(Number(selectedGenre)));
+      }
+      setResults((prev) => [...prev, ...newMovies]);
       setPage(nextPage);
     } catch (e) {
       console.error(e);
@@ -106,6 +149,8 @@ export default function Search({ toggleFavorite, isFavorite }) {
 
   const trimmedUrl = urlQuery.trim();
   const hasMore = page < totalPages;
+  const selectedGenreName = genres.find((g) => String(g.id) === String(selectedGenre))?.name || '';
+  const hasActiveFilterOrQuery = Boolean(trimmedUrl || selectedGenre || selectedYear);
 
   return (
     <div className="search-page page-container">
@@ -117,12 +162,12 @@ export default function Search({ toggleFavorite, isFavorite }) {
         </svg>
         <input
           type="text"
-          placeholder="Search movies..."
+          placeholder="Cari judul film..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           className="search-page__input"
           autoFocus
-          aria-label="Search movies"
+          aria-label="Cari judul film"
         />
         {inputValue && (
           <button
@@ -137,16 +182,90 @@ export default function Search({ toggleFavorite, isFavorite }) {
         )}
       </div>
 
-      {trimmedUrl && !loading && !error && (
+      {/* Advanced Filter Dropdowns (Genre & Year) */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        {/* Genre Dropdown */}
+        <div className="relative flex-1 min-w-[150px] sm:min-w-[180px]">
+          <select
+            value={selectedGenre}
+            onChange={(e) => setSelectedGenre(e.target.value)}
+            className="w-full appearance-none bg-zinc-900/90 text-zinc-200 border border-zinc-800 hover:border-zinc-700 text-sm rounded-xl pl-3.5 pr-9 py-2.5 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition cursor-pointer shadow-sm"
+            aria-label="Filter berdasarkan genre"
+          >
+            <option value="" className="bg-zinc-900 text-zinc-300">Semua Genre</option>
+            {genres.map((g) => (
+              <option key={g.id} value={g.id} className="bg-zinc-900 text-zinc-200">
+                {g.name}
+              </option>
+            ))}
+          </select>
+          <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-zinc-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </div>
+
+        {/* Release Year Dropdown */}
+        <div className="relative flex-1 min-w-[130px] sm:min-w-[150px]">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="w-full appearance-none bg-zinc-900/90 text-zinc-200 border border-zinc-800 hover:border-zinc-700 text-sm rounded-xl pl-3.5 pr-9 py-2.5 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition cursor-pointer shadow-sm"
+            aria-label="Filter berdasarkan tahun"
+          >
+            <option value="" className="bg-zinc-900 text-zinc-300">Semua Tahun</option>
+            {YEARS.map((yr) => (
+              <option key={yr} value={yr} className="bg-zinc-900 text-zinc-200">
+                {yr}
+              </option>
+            ))}
+          </select>
+          <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-zinc-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </div>
+
+        {/* Reset Filters button */}
+        {(selectedGenre || selectedYear) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedGenre('');
+              setSelectedYear('');
+            }}
+            className="px-3.5 py-2.5 rounded-xl text-xs font-medium bg-zinc-800/80 hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white border border-zinc-700/60 transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Reset Filter
+          </button>
+        )}
+      </div>
+
+      {/* Results Count Summary */}
+      {hasActiveFilterOrQuery && !loading && !error && (
         <p className="search-page__count">
-          {totalResults.toLocaleString()} results for <strong>&ldquo;{trimmedUrl}&rdquo;</strong>
+          {totalResults.toLocaleString()} film ditemukan
+          {trimmedUrl && <span> untuk <strong>&ldquo;{trimmedUrl}&rdquo;</strong></span>}
+          {selectedGenreName && <span className="text-zinc-300 font-medium"> &bull; Genre: {selectedGenreName}</span>}
+          {selectedYear && <span className="text-zinc-300 font-medium"> &bull; Tahun: {selectedYear}</span>}
         </p>
       )}
 
       {error && <ErrorState message={error} />}
 
       {loading ? (
-        <SkeletonGrid count={12} />
+        <section className="movie-grid">
+          <div className="movie-grid__list">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <MovieCardSkeleton key={index} />
+            ))}
+          </div>
+        </section>
       ) : results.length > 0 ? (
         <>
           <MovieGrid
@@ -169,14 +288,14 @@ export default function Search({ toggleFavorite, isFavorite }) {
           )}
         </>
       ) : (
-        trimmedUrl && !error && (
+        hasActiveFilterOrQuery && !error && (
           <div className="search-page__empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <p>No results for &ldquo;{trimmedUrl}&rdquo;</p>
-            <span>Try a different keyword or check your spelling.</span>
+            <p>Tidak ada film ditemukan</p>
+            <span>Coba kata kunci lain atau sesuaikan kombinasi filter genre dan tahun rilis.</span>
           </div>
         )
       )}
