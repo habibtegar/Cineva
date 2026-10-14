@@ -214,9 +214,16 @@ export default function Login() {
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="inline-block text-2xl font-bold tracking-tight text-white hover:text-red-500 transition-colors"
+            className="inline-flex flex-col items-center gap-2 group"
           >
-            Cineva
+            <img
+              src="/logo.png"
+              alt="Cineva Logo"
+              className="w-16 h-16 rounded-2xl shadow-xl shadow-amber-500/10 group-hover:scale-105 transition-transform"
+            />
+            <span className="text-2xl font-bold tracking-tight text-white group-hover:text-red-500 transition-colors">
+              Cineva
+            </span>
           </Link>
           <h1 className="mt-2 text-xl font-semibold text-zinc-100 tracking-tight">
             Masuk ke Akun Anda

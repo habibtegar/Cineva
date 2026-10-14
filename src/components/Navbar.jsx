@@ -215,8 +215,13 @@ export default function Navbar() {
       >
         <div className="navbar__inner flex justify-between items-center w-full">
           {/* Logo */}
-          <Link to="/" className="navbar__logo">
-            Cineva
+          <Link to="/" className="navbar__logo flex items-center gap-2.5">
+            <img
+              src="/logo.png"
+              alt="Cineva"
+              className="w-8 h-8 rounded-lg object-contain shadow-md"
+            />
+            <span>Cineva</span>
           </Link>
 
           {/* Desktop nav */}
@@ -713,7 +718,14 @@ export default function Navbar() {
         aria-label="Navigation menu"
       >
         <div className="navbar__drawer-header">
-          <span className="navbar__drawer-logo">Cineva</span>
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/logo.png"
+              alt="Cineva"
+              className="w-7 h-7 rounded-lg object-contain"
+            />
+            <span className="navbar__drawer-logo">Cineva</span>
+          </div>
           <button
             className="navbar__drawer-close"
             onClick={() => setDrawerOpen(false)}
