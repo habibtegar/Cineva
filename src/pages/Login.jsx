@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   sendEmailVerification,
   signOut,
@@ -12,69 +11,28 @@ import { auth } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { getAuthErrorMessage } from '../utils/authErrors';
 
-// Daftar domain email sampah (disposable / temporary email)
-const DISPOSABLE_DOMAINS = [
-  'mailinator.com',
-  'tempmail.com',
-  '10minutemail.com',
-  'guerrillamail.com',
-  'throwawaymail.com',
-  'fake.com',
-  'temp-mail.org',
-  'guerrillamail.net',
-  'guerrillamail.org',
-  'guerrillamail.biz',
-  'guerrillamailblock.com',
-  'yopmail.com',
-  'yopmail.fr',
-  'yopmail.net',
-  'dispostable.com',
-  'sharklasers.com',
-  'trashmail.com',
-  'trashmail.net',
-  'trashmail.me',
-  'grr.la',
-  'nada.ltd',
-  'getnada.com',
-  'mohmal.com',
-  'fakemailgenerator.com',
-  'burnermail.io',
-  'maildrop.cc',
-  'inboxkitten.com',
-  'crazymailing.com',
-  'mytemp.email',
-  '10mail.org',
-  'dropmail.me',
-  'getairmail.com',
-  'emailondeck.com',
-  'tempinbox.com',
-  'generator.email',
-  'mintemail.com',
-  'spam4.me',
-  'tempr.email',
-  'discard.email',
-];
-
 export default function Login() {
-  const [isLoginMode, setIsLoginMode] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
-  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(
+    () => location.state?.unverifiedEmail || null
+  );
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const { user, loginWithGoogle } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  // Dynamic Document Title: ubah judul tab browser untuk halaman Login / Register
+  // Dynamic Document Title
   useEffect(() => {
-    document.title = isLoginMode ? 'Login - Cineva' : 'Register - Cineva';
-  }, [isLoginMode]);
+    document.title = 'Login - Cineva';
+  }, []);
 
   const from = location.state?.from?.pathname || '/';
 
@@ -105,16 +63,6 @@ export default function Login() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
       toast.error('Format email tidak valid.');
-      return false;
-    }
-    const domain = trimmedEmail.toLowerCase().split('@')[1];
-    if (
-      !isLoginMode &&
-      domain &&
-      (DISPOSABLE_DOMAINS.includes(domain) ||
-        DISPOSABLE_DOMAINS.some((d) => domain.endsWith('.' + d)))
-    ) {
-      toast.error('Domain email tidak diizinkan. Gunakan email asli!');
       return false;
     }
     if (!password) {
@@ -161,64 +109,6 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err) {
       console.error('Sign In error:', err);
-      toast.error(getAuthErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Sign Up handler
-  const handleSignUp = async (e) => {
-    if (e) e.preventDefault();
-
-    const trimmedEmail = email.trim().toLowerCase();
-    const domain = trimmedEmail.split('@')[1];
-
-    // Cegat di Paling Awal: Sebelum panggil fungsi Firebase apa pun di handler Sign Up
-    if (
-      domain &&
-      (DISPOSABLE_DOMAINS.includes(domain) ||
-        DISPOSABLE_DOMAINS.some((d) => domain.endsWith('.' + d)))
-    ) {
-      toast.error('Domain email tidak diizinkan. Gunakan email asli!');
-      return;
-    }
-
-    if (!validateInputs()) return;
-
-    // Loading State aktif saat tombol ditekan
-    setIsLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        trimmedEmail,
-        password
-      );
-
-      // Kirim email verifikasi
-      await sendEmailVerification(userCredential.user);
-
-      // Langsung paksa keluar agar tidak auto-login
-      if (typeof auth.signOut === 'function') {
-        await auth.signOut();
-      } else {
-        await signOut(auth);
-      }
-
-      setUnverifiedEmail(trimmedEmail);
-
-      // Tampilkan notifikasi
-      toast.success(
-        'Pendaftaran berhasil! Cek folder Inbox atau Spam di Gmail kamu untuk verifikasi sebelum login.',
-        { duration: 6000 }
-      );
-
-      // Pindahkan tampilan kembali ke form Sign In (bukan langsung masuk ke dashboard)
-      setPassword('');
-      setIsLoginMode(true);
-      setResendCooldown(60);
-    } catch (err) {
-      console.error('Sign Up error:', err);
       toast.error(getAuthErrorMessage(err));
     } finally {
       setIsLoading(false);
@@ -299,6 +189,7 @@ export default function Login() {
 
   // Google Sign-In handler
   const handleGoogleSignIn = async () => {
+    setIsLoading(true);
     setIsLoadingGoogle(true);
     try {
       await loginWithGoogle();
@@ -306,11 +197,10 @@ export default function Login() {
     } catch (err) {
       console.error('Google Sign-In caught in Login page:', err);
     } finally {
+      setIsLoading(false);
       setIsLoadingGoogle(false);
     }
   };
-
-  const isAnyLoading = isLoading || isLoadingGoogle || isSendingReset || isResending;
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-12 bg-[#141414] overflow-hidden select-none">
@@ -329,17 +219,15 @@ export default function Login() {
             Cineva
           </Link>
           <h1 className="mt-2 text-xl font-semibold text-zinc-100 tracking-tight">
-            {isLoginMode ? 'Masuk ke Akun Anda' : 'Daftar Akun Baru'}
+            Masuk ke Akun Anda
           </h1>
           <p className="mt-1 text-sm text-zinc-400">
-            {isLoginMode
-              ? 'Akses film favorit dan jelajahi ribuan tontonan terbaik'
-              : 'Mulai buat akun Cineva Anda hanya dalam hitungan detik'}
+            Akses film favorit dan jelajahi ribuan tontonan terbaik
           </p>
         </div>
 
         {/* Unverified Email Alert Banner */}
-        {unverifiedEmail && isLoginMode && (
+        {unverifiedEmail && (
           <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 font-semibold text-amber-300 text-sm">
@@ -378,7 +266,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={handleResendVerification}
-                disabled={isAnyLoading || resendCooldown > 0}
+                disabled={isLoading || isResending || resendCooldown > 0}
                 className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-medium transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm"
               >
                 {isResending ? (
@@ -397,7 +285,7 @@ export default function Login() {
         )}
 
         {/* Email & Password Form */}
-        <form onSubmit={isLoginMode ? handleSignIn : handleSignUp} className="space-y-4">
+        <form onSubmit={handleSignIn} className="space-y-4">
           {/* Email Input */}
           <div>
             <label
@@ -430,7 +318,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                disabled={isAnyLoading}
+                disabled={isLoading}
                 className="w-full bg-zinc-950/70 border border-zinc-800 text-zinc-100 text-sm rounded-xl pl-10 pr-4 py-3 placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
                 required
               />
@@ -446,27 +334,14 @@ export default function Login() {
               >
                 Password
               </label>
-              {isLoginMode && (
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUnverifiedEmail(email.trim() || 'email akun Anda');
-                    }}
-                    className="text-xs text-zinc-400 hover:text-amber-400 transition cursor-pointer hover:underline"
-                  >
-                    Bantuan Verifikasi
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    disabled={isAnyLoading}
-                    className="text-xs text-red-500 hover:text-red-400 font-medium transition cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSendingReset ? 'Mengirim link...' : 'Lupa Password?'}
-                  </button>
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={isLoading || isSendingReset}
+                className="text-xs text-red-500 hover:text-red-400 font-medium transition cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSendingReset ? 'Mengirim link...' : 'Lupa Password?'}
+              </button>
             </div>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
@@ -488,18 +363,18 @@ export default function Login() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete={isLoginMode ? 'current-password' : 'new-password'}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimal 6 karakter"
-                disabled={isAnyLoading}
+                disabled={isLoading}
                 className="w-full bg-zinc-950/70 border border-zinc-800 text-zinc-100 text-sm rounded-xl pl-10 pr-11 py-3 placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-zinc-400 hover:text-zinc-200 transition focus:outline-none"
+                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-zinc-400 hover:text-zinc-200 transition focus:outline-none cursor-pointer"
                 aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 tabIndex={-1}
               >
@@ -544,26 +419,39 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Tombol Utama Lebar Penuh (w-full) */}
+          {/* Submit Button (Sign In) */}
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isAnyLoading}
-              className="w-full bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-medium text-sm py-3 px-4 rounded-xl shadow-lg shadow-red-950/50 hover:shadow-red-900/50 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+              className="w-full bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-medium text-sm py-3 px-4 rounded-xl shadow-lg shadow-red-950/50 hover:shadow-red-900/50 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {isLoading && !isLoadingGoogle ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>{isLoginMode ? 'Signing In...' : 'Mendaftarkan...'}</span>
+                  <span>Memproses...</span>
                 </>
               ) : (
-                <span>{isLoginMode ? 'Sign In' : 'Sign Up'}</span>
+                <span>Sign In</span>
               )}
+            </button>
+          </div>
+
+          {/* Tautan Bantuan Verifikasi di bagian bawah tombol Sign In */}
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setUnverifiedEmail(email.trim() || 'email akun Anda');
+              }}
+              className="text-xs text-gray-400 hover:text-white transition cursor-pointer hover:underline"
+            >
+              Belum menerima email verifikasi? Bantuan Verifikasi
             </button>
           </div>
         </form>
 
-        {/* Garis pembatas OR */}
+        {/* Divider OR */}
         <div className="relative flex items-center justify-center my-6">
           <div className="w-full border-t border-zinc-800" />
           <span className="absolute px-3 bg-zinc-900 text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -571,17 +459,17 @@ export default function Login() {
           </span>
         </div>
 
-        {/* Tombol Continue with Google */}
+        {/* Google Sign-In Button */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          disabled={isAnyLoading}
-          className="w-full bg-zinc-950 hover:bg-zinc-800/80 active:scale-[0.98] text-zinc-200 border border-zinc-800 hover:border-zinc-700 text-sm font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading}
+          className="w-full bg-zinc-950 hover:bg-zinc-800/80 active:scale-[0.98] text-zinc-200 border border-zinc-800 hover:border-zinc-700 text-sm font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isLoadingGoogle ? (
             <>
               <span className="w-4 h-4 border-2 border-zinc-400/30 border-t-zinc-200 rounded-full animate-spin" />
-              <span>Menghubungkan ke Google...</span>
+              <span>Memproses...</span>
             </>
           ) : (
             <>
@@ -608,35 +496,17 @@ export default function Login() {
           )}
         </button>
 
-        {/* Teks Toggle Mode Login / Register */}
+        {/* Link ke Register */}
         <div className="mt-6 text-center text-sm text-zinc-400">
-          {isLoginMode ? (
-            <p>
-              Belum punya akun?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLoginMode(false);
-                }}
-                className="text-red-500 hover:text-red-400 font-medium transition hover:underline cursor-pointer"
-              >
-                Daftar di sini
-              </button>
-            </p>
-          ) : (
-            <p>
-              Sudah punya akun?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLoginMode(true);
-                }}
-                className="text-red-500 hover:text-red-400 font-medium transition hover:underline cursor-pointer"
-              >
-                Masuk di sini
-              </button>
-            </p>
-          )}
+          <p>
+            Belum punya akun?{' '}
+            <Link
+              to="/register"
+              className="text-red-500 hover:text-red-400 font-medium transition hover:underline"
+            >
+              Daftar di sini
+            </Link>
+          </p>
         </div>
 
         {/* Footer Link Kembali ke Beranda */}

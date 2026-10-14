@@ -86,7 +86,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const registerWithEmail = async (email, password) => {
+  const registerWithEmail = async (email, password, displayName) => {
     setError(null);
     const trimmedEmail = email?.trim() || '';
     if (isDisposableEmail(trimmedEmail)) {
@@ -98,6 +98,9 @@ export function AuthProvider({ children }) {
     try {
       const result = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
       const newUser = result.user;
+      if (auth.currentUser && displayName?.trim()) {
+        await updateProfile(auth.currentUser, { displayName: displayName.trim() });
+      }
       await sendEmailVerification(newUser);
       toast.success('Pendaftaran berhasil! Cek folder Inbox atau Spam di Gmail kamu untuk verifikasi sebelum login.', {
         duration: 5000,

@@ -11,6 +11,7 @@ import PersonDetail from './pages/PersonDetail';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import { useFavorites } from './hooks/useFavorites';
 
 export default function App() {
@@ -45,8 +46,10 @@ export default function App() {
     );
   }
 
-  // Sembunyikan Navbar dan Footer saat pengguna berada di halaman login
-  const isAuthPage = location.pathname.startsWith('/login');
+  // Sembunyikan Navbar dan Footer saat pengguna berada di halaman login atau register
+  const isAuthPage =
+    location.pathname.startsWith('/login') ||
+    location.pathname.startsWith('/register');
 
   return (
     <>
@@ -134,6 +137,7 @@ export default function App() {
             }
           />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </main>
       {!isAuthPage && <Footer />}
