@@ -226,64 +226,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Unverified Email Alert Banner */}
-        {unverifiedEmail && (
-          <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 font-semibold text-amber-300 text-sm">
-                <svg
-                  className="w-4 h-4 shrink-0 text-amber-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-                <span>Verifikasi Email Diperlukan</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setUnverifiedEmail(null)}
-                className="text-zinc-400 hover:text-zinc-200 transition text-sm leading-none p-1 cursor-pointer"
-                aria-label="Tutup notifikasi"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-zinc-300 leading-relaxed text-xs">
-              Tautan verifikasi telah dikirim ke{' '}
-              <span className="font-semibold text-white">{unverifiedEmail}</span>.
-            </p>
-
-            <div className="pt-0.5 flex items-center justify-between gap-2">
-              <span className="text-[11px] text-zinc-400">Belum menerima email?</span>
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={isLoading || isResending || resendCooldown > 0}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-medium transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                {isResending ? (
-                  <>
-                    <span className="w-3 h-3 border-2 border-amber-200/30 border-t-amber-200 rounded-full animate-spin" />
-                    <span>Mengirim...</span>
-                  </>
-                ) : resendCooldown > 0 ? (
-                  <span>Kirim Ulang ({resendCooldown}s)</span>
-                ) : (
-                  <span>Kirim Ulang Email</span>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Email & Password Form */}
         <form onSubmit={handleSignIn} className="space-y-4">
           {/* Email Input */}
@@ -436,20 +378,65 @@ export default function Login() {
               )}
             </button>
           </div>
-
-          {/* Tautan Bantuan Verifikasi di bagian bawah tombol Sign In */}
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setUnverifiedEmail(email.trim() || 'email akun Anda');
-              }}
-              className="text-xs text-gray-400 hover:text-white transition cursor-pointer hover:underline"
-            >
-              Belum menerima email verifikasi? Bantuan Verifikasi
-            </button>
-          </div>
         </form>
+
+        {/* Unverified Email Alert Banner */}
+        {unverifiedEmail && (
+          <div className="mt-4 mb-2 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-semibold text-amber-300 text-sm">
+                <svg
+                  className="w-4 h-4 shrink-0 text-amber-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <span>Verifikasi Email Diperlukan</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUnverifiedEmail(null)}
+                className="text-zinc-400 hover:text-zinc-200 transition text-sm leading-none p-1 cursor-pointer"
+                aria-label="Tutup notifikasi"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-zinc-300 leading-relaxed text-xs">
+              Tautan verifikasi telah dikirim ke{' '}
+              <span className="font-semibold text-white">{unverifiedEmail}</span>.
+            </p>
+
+            <div className="pt-0.5 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-zinc-400">Belum menerima email?</span>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isLoading || isResending || resendCooldown > 0}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-medium transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                {isResending ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-amber-200/30 border-t-amber-200 rounded-full animate-spin" />
+                    <span>Mengirim...</span>
+                  </>
+                ) : resendCooldown > 0 ? (
+                  <span>Kirim Ulang ({resendCooldown}s)</span>
+                ) : (
+                  <span>Kirim Ulang Email</span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Divider OR */}
         <div className="relative flex items-center justify-center my-6">
