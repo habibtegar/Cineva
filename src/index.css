@@ -148,3 +148,43 @@ html {
   font-size: 0.75rem !important;
 }
 
+/* ========================================
+   Cineva — Cinematic Toast & Pop-in Animation
+   ======================================== */
+@keyframes cineva-toast-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(-8px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.015) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.cineva-toast {
+  letter-spacing: 0.015em;
+  font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.cineva-toast > * {
+  animation: cineva-toast-pop-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (max-width: 640px) {
+  .cineva-toaster-container {
+    left: 12px !important;
+    right: 12px !important;
+    top: 16px !important;
+  }
+  .cineva-toast {
+    max-width: calc(100vw - 32px) !important;
+  }
+}
+

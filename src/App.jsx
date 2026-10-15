@@ -55,24 +55,54 @@ export default function App() {
     <>
       <Toaster
         position="top-right"
+        gutter={10}
+        containerClassName="cineva-toaster-container"
+        containerStyle={{
+          top: 24,
+          right: 24,
+          left: 24,
+          bottom: 24,
+          zIndex: 99999,
+        }}
         toastOptions={{
-          duration: 3000,
+          duration: 3500,
+          className:
+            'cineva-toast bg-zinc-900/80 backdrop-blur-md border border-zinc-700/60 text-white rounded-xl shadow-2xl px-4 py-3',
           style: {
-            background: '#18181b',
-            color: '#f4f4f5',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
-            fontSize: '14px',
-            borderRadius: '10px',
+            background: 'rgba(24, 24, 27, 0.82)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(63, 63, 70, 0.6)',
+            color: '#ffffff',
+            boxShadow:
+              '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 0, 0, 0.4)',
+            borderRadius: '0.75rem',
             padding: '12px 16px',
+            fontSize: '14px',
+            fontWeight: 500,
+            maxWidth: '440px',
           },
           success: {
+            duration: 3200,
+            style: {
+              background: 'rgba(24, 24, 27, 0.85)',
+              border: '1px solid rgba(34, 197, 94, 0.4)',
+              boxShadow:
+                '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 20px rgba(34, 197, 94, 0.2)',
+            },
             iconTheme: {
               primary: '#22c55e',
               secondary: '#18181b',
             },
           },
           error: {
+            duration: 4000,
+            style: {
+              background: 'rgba(24, 24, 27, 0.85)',
+              border: '1px solid rgba(239, 68, 68, 0.45)',
+              boxShadow:
+                '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 25px rgba(220, 38, 38, 0.25)',
+            },
             iconTheme: {
               primary: '#ef4444',
               secondary: '#18181b',
