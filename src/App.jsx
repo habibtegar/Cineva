@@ -35,11 +35,6 @@ export default function App() {
         <div className="absolute w-[420px] h-[420px] bg-red-600/15 rounded-full blur-[140px] pointer-events-none" />
 
         <div className="relative flex flex-col items-center text-center px-4">
-          <img
-            src="/logo.png"
-            alt="Cineva"
-            className="w-20 h-20 md:w-28 md:h-28 mb-5 rounded-3xl shadow-2xl shadow-amber-500/20 animate-pulse object-contain"
-          />
           <h1 className="text-4xl md:text-6xl font-bold text-red-600 tracking-[0.3em] uppercase drop-shadow-[0_0_35px_rgba(220,38,38,0.65)]">
             Cineva
           </h1>
