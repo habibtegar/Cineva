@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   collection,
   doc,
@@ -9,6 +9,13 @@ import {
 import toast from 'react-hot-toast';
 import { db } from './firebase';
 import { useAuth } from './useAuth';
+
+// ID unik statis untuk memastikan hanya ada 1 toast favorit di layar dan tidak menumpuk
+const FAVORITE_TOAST_ID = 'cineva-favorite-toast';
+
+// Cooldown proteksi spam klik (350ms)
+const SPAM_COOLDOWN_MS = 350;
+let lastFavoriteActionTime = 0;
 
 // Ikon hati merah menyala (glowing red heart) untuk notifikasi penambahan favorit
 const glowingRedHeartIcon = React.createElement(
@@ -53,6 +60,7 @@ export function useFavorites() {
   const { user } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
+  const pendingOperationsRef = useRef(new Set());
 
   // Ambil daftar film favorit dari Firestore berdasarkan user.uid saat aplikasi dimuat atau user berubah
   useEffect(() => {
@@ -98,16 +106,35 @@ export function useFavorites() {
 
   const toggleFavorite = useCallback(
     async (movie) => {
-      // Tombol 'Favorite' hanya bisa diklik jika pengguna sudah login (cek dari AuthContext)
-      if (!user?.uid) {
-        toast.error('Silakan login untuk menyimpan film', {
-          id: 'fav-auth-required',
-          position: 'top-center',
-        });
+      if (!movie || !movie.id) return;
+
+      const now = Date.now();
+      // Proteksi spam klik beruntun (cooldown 350ms)
+      if (now - lastFavoriteActionTime < SPAM_COOLDOWN_MS) {
         return;
       }
 
       const movieIdStr = String(movie.id);
+
+      // Cegah operasi ganda saat Firestore masih memproses film yang sama
+      if (pendingOperationsRef.current.has(movieIdStr)) {
+        return;
+      }
+
+      lastFavoriteActionTime = now;
+
+      // Tombol 'Favorite' hanya bisa diklik jika pengguna sudah login (cek dari AuthContext)
+      if (!user?.uid) {
+        toast.dismiss();
+        toast.error('Silakan login untuk menyimpan film', {
+          id: FAVORITE_TOAST_ID,
+          position: 'top-center',
+          duration: 3000,
+        });
+        return;
+      }
+
+      pendingOperationsRef.current.add(movieIdStr);
       const movieTitle = movie.title || movie.name || 'Film';
       const isAlreadyFav = favorites.some((m) => String(m.id) === movieIdStr);
       const movieDocRef = doc(db, 'users', user.uid, 'favorites', movieIdStr);
@@ -116,37 +143,49 @@ export function useFavorites() {
         // Optimistic update: hapus dari state lokal
         setFavorites((prev) => prev.filter((m) => String(m.id) !== movieIdStr));
 
+        // Dismiss notifikasi lama seketika agar tidak menumpuk dan tampilkan yang terbaru
+        toast.dismiss();
+        toast(
+          React.createElement(
+            'span',
+            {
+              key: `fav-rem-${movieIdStr}-${Date.now()}`,
+              className: 'text-zinc-200 text-sm font-medium tracking-wide flex items-center',
+            },
+            React.createElement(
+              'strong',
+              { className: 'font-semibold text-white mr-1' },
+              movieTitle
+            ),
+            'dihapus dari favorit'
+          ),
+          {
+            id: FAVORITE_TOAST_ID,
+            position: 'top-center',
+            duration: 3000,
+            icon: grayHeartIcon,
+            style: {
+              border: '1px solid rgba(239, 68, 68, 0.45)',
+              boxShadow:
+                '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 25px rgba(220, 38, 38, 0.22)',
+            },
+          }
+        );
+
         try {
           await deleteDoc(movieDocRef);
-          toast(
-            React.createElement(
-              'span',
-              { className: 'text-zinc-200 text-sm font-medium tracking-wide' },
-              React.createElement(
-                'strong',
-                { className: 'font-semibold text-white mr-1' },
-                movieTitle
-              ),
-              'dihapus dari favorit'
-            ),
-            {
-              id: `fav-${movieIdStr}`,
-              position: 'top-center',
-              icon: grayHeartIcon,
-              style: {
-                border: '1px solid rgba(113, 113, 122, 0.45)',
-                boxShadow:
-                  '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4)',
-              },
-            }
-          );
         } catch (error) {
           console.error('Failed to remove favorite from Firestore:', error);
           // Rollback jika gagal
           setFavorites((prev) => [...prev, movie]);
+          toast.dismiss();
           toast.error(`Gagal menghapus ${movieTitle} dari favorit`, {
+            id: FAVORITE_TOAST_ID,
             position: 'top-center',
+            duration: 3000,
           });
+        } finally {
+          pendingOperationsRef.current.delete(movieIdStr);
         }
       } else {
         const movieData = {
@@ -160,37 +199,49 @@ export function useFavorites() {
         // Optimistic update: tambahkan ke state lokal
         setFavorites((prev) => [...prev, movieData]);
 
+        // Dismiss notifikasi lama seketika agar tidak menumpuk dan tampilkan yang terbaru
+        toast.dismiss();
+        toast(
+          React.createElement(
+            'span',
+            {
+              key: `fav-add-${movieIdStr}-${Date.now()}`,
+              className: 'text-zinc-200 text-sm font-medium tracking-wide flex items-center',
+            },
+            React.createElement(
+              'strong',
+              { className: 'font-semibold text-white mr-1' },
+              movieTitle
+            ),
+            'ditambahkan ke favorit'
+          ),
+          {
+            id: FAVORITE_TOAST_ID,
+            position: 'top-center',
+            duration: 3000,
+            icon: glowingRedHeartIcon,
+            style: {
+              border: '1px solid rgba(239, 68, 68, 0.45)',
+              boxShadow:
+                '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 25px rgba(220, 38, 38, 0.25)',
+            },
+          }
+        );
+
         try {
           await setDoc(movieDocRef, movieData);
-          toast(
-            React.createElement(
-              'span',
-              { className: 'text-zinc-200 text-sm font-medium tracking-wide' },
-              React.createElement(
-                'strong',
-                { className: 'font-semibold text-white mr-1' },
-                movieTitle
-              ),
-              'ditambahkan ke favorit'
-            ),
-            {
-              id: `fav-${movieIdStr}`,
-              position: 'top-center',
-              icon: glowingRedHeartIcon,
-              style: {
-                border: '1px solid rgba(239, 68, 68, 0.45)',
-                boxShadow:
-                  '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 25px rgba(220, 38, 38, 0.25)',
-              },
-            }
-          );
         } catch (error) {
           console.error('Failed to save favorite to Firestore:', error);
           // Rollback jika gagal
           setFavorites((prev) => prev.filter((m) => String(m.id) !== movieIdStr));
+          toast.dismiss();
           toast.error(`Gagal menambahkan ${movieTitle} ke favorit`, {
+            id: FAVORITE_TOAST_ID,
             position: 'top-center',
+            duration: 3000,
           });
+        } finally {
+          pendingOperationsRef.current.delete(movieIdStr);
         }
       }
     },
