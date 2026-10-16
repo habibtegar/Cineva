@@ -12,11 +12,16 @@
   border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease-in-out;
 }
 
 .search-page__bar:focus-within {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: #71717a;
+  box-shadow: 0 0 0 1px #52525b;
+}
+
+.search-page__bar:focus-within > svg {
+  color: #a1a1aa;
 }
 
 .search-page__bar > svg {
@@ -24,6 +29,7 @@
   height: 18px;
   color: #52525b;
   flex-shrink: 0;
+  transition: color 0.2s ease;
 }
 
 .search-page__input {
@@ -31,9 +37,16 @@
   background: none;
   border: none;
   outline: none;
+  box-shadow: none;
   font-family: inherit;
   font-size: 1rem;
   color: #e4e4e7;
+}
+
+.search-page__input:focus,
+.search-page__input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .search-page__input::placeholder {

@@ -221,7 +221,7 @@ export default function Search({ toggleFavorite, isFavorite }) {
     <div className="search-page page-container">
       {/* Inline search input on page */}
       <form
-        className="search-page__bar"
+        className="search-page__bar transition-all duration-200 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-600"
         onSubmit={(e) => {
           e.preventDefault();
           const trimmed = inputValue.trim();
@@ -240,7 +240,7 @@ export default function Search({ toggleFavorite, isFavorite }) {
           placeholder="Search movies..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          className="search-page__input"
+          className="search-page__input focus:outline-none focus:ring-0"
           autoFocus
           aria-label="Search movies"
         />
