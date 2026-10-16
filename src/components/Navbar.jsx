@@ -68,6 +68,7 @@ export default function Navbar() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isSearchPage = location.pathname === '/search';
   const inputRef = useRef(null);
   const mobileInputRef = useRef(null);
   const searchContainerRef = useRef(null);
@@ -238,7 +239,8 @@ export default function Navbar() {
 
             <div className="navbar__actions">
               {/* Desktop Search with Live Dropdown */}
-              <div className="navbar__search-wrapper" ref={searchContainerRef}>
+              {!isSearchPage && (
+                <div className="navbar__search-wrapper" ref={searchContainerRef}>
                 <form className="navbar__search" onSubmit={handleSearchSubmit}>
                   <svg className="navbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8" />
@@ -345,6 +347,7 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Profile / Avatar Indicator */}
               <div className="navbar__profile-wrapper" ref={profileContainerRef}>
@@ -493,44 +496,46 @@ export default function Navbar() {
 
           {/* Mobile Actions: Search Icon + Hamburger Menu */}
           <div className="navbar__mobile-actions flex items-center gap-2 md:hidden">
-            <button
-              type="button"
-              className={`navbar__mobile-search-btn${mobileSearchOpen ? ' navbar__mobile-search-btn--active' : ''}`}
-              onClick={() => {
-                setMobileSearchOpen((prev) => !prev);
-                setDrawerOpen(false);
-              }}
-              aria-label={mobileSearchOpen ? 'Close search' : 'Open search'}
-              title={mobileSearchOpen ? 'Close search' : 'Search movies'}
-            >
-              {mobileSearchOpen ? (
-                <svg
-                  className="navbar__mobile-search-btn-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg
-                  className="navbar__mobile-search-btn-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              )}
-            </button>
+            {!isSearchPage && (
+              <button
+                type="button"
+                className={`navbar__mobile-search-btn${mobileSearchOpen ? ' navbar__mobile-search-btn--active' : ''}`}
+                onClick={() => {
+                  setMobileSearchOpen((prev) => !prev);
+                  setDrawerOpen(false);
+                }}
+                aria-label={mobileSearchOpen ? 'Close search' : 'Open search'}
+                title={mobileSearchOpen ? 'Close search' : 'Search movies'}
+              >
+                {mobileSearchOpen ? (
+                  <svg
+                    className="navbar__mobile-search-btn-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                ) : (
+                  <svg
+                    className="navbar__mobile-search-btn-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                )}
+              </button>
+            )}
 
             {/* Burger button — mobile only */}
             <button
@@ -550,7 +555,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Floating Search Dropdown */}
-        {mobileSearchOpen && (
+        {!isSearchPage && mobileSearchOpen && (
           <div
             className="navbar__mobile-search-dropdown"
             ref={mobileSearchDropdownRef}

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MovieGrid from '../components/MovieGrid';
+import MovieCard from '../components/MovieCard';
 import MovieCardSkeleton from '../components/MovieCardSkeleton';
 import ErrorState from '../components/ErrorState';
-import { searchMovies, getGenres, discoverMovies } from '../services/tmdb';
+import { searchMovies, getGenres, discoverMovies, getTrending, getPopular } from '../services/tmdb';
 import './Search.css';
 
 /**
@@ -44,6 +45,11 @@ export default function Search({ toggleFavorite, isFavorite }) {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const abortRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  // Rekomendasi alternatif saat hasil pencarian kosong
+  const [recommendations, setRecommendations] = useState([]);
+  const [recLoading, setRecLoading] = useState(false);
 
   // Dynamic Document Title: ubah judul tab browser untuk halaman Search
   useEffect(() => {
@@ -61,6 +67,52 @@ export default function Search({ toggleFavorite, isFavorite }) {
       .then((data) => setGenres(data.genres || []))
       .catch((err) => console.error('Failed to fetch genres:', err));
   }, []);
+
+  // Fetch trending/popular recommendations for empty state
+  useEffect(() => {
+    let isActive = true;
+    setRecLoading(true);
+
+    getTrending('week', 1)
+      .then((data) => {
+        if (!isActive) return;
+        const list = data?.results || [];
+        if (list.length > 0) {
+          setRecommendations(list.slice(0, 6));
+        } else {
+          return getPopular(1);
+        }
+      })
+      .then((popData) => {
+        if (!isActive || !popData) return;
+        const list = popData?.results || [];
+        if (list.length > 0) {
+          setRecommendations(list.slice(0, 6));
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch recommendations:', err);
+      })
+      .finally(() => {
+        if (isActive) setRecLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  // Reset pencarian dan kembalikan filter ke default
+  const handleResetSearch = () => {
+    setInputValue('');
+    setSelectedGenre('');
+    setSelectedYear('');
+    setResults([]);
+    setTotalResults(0);
+    setTotalPages(1);
+    navigate('/search', { replace: true });
+    searchInputRef.current?.focus();
+  };
 
   // Sync input with URL param when navigating from Navbar
   useEffect(() => {
@@ -168,12 +220,22 @@ export default function Search({ toggleFavorite, isFavorite }) {
   return (
     <div className="search-page page-container">
       {/* Inline search input on page */}
-      <div className="search-page__bar">
+      <form
+        className="search-page__bar"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const trimmed = inputValue.trim();
+          if (trimmed && trimmed !== urlQuery) {
+            navigate(`/search?q=${encodeURIComponent(trimmed)}`, { replace: true });
+          }
+        }}
+      >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
+          ref={searchInputRef}
           type="text"
           placeholder="Cari judul film..."
           value={inputValue}
@@ -184,6 +246,7 @@ export default function Search({ toggleFavorite, isFavorite }) {
         />
         {inputValue && (
           <button
+            type="button"
             className="search-page__clear"
             onClick={() => { setInputValue(''); navigate('/search'); }}
             aria-label="Clear search"
@@ -193,7 +256,7 @@ export default function Search({ toggleFavorite, isFavorite }) {
             </svg>
           </button>
         )}
-      </div>
+      </form>
 
       {/* Advanced Filter Dropdowns (Genre & Year) */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -307,26 +370,86 @@ export default function Search({ toggleFavorite, isFavorite }) {
         </>
       ) : (
         !isLoading && !error && movies.length === 0 && (
-          <div className="flex flex-col items-center justify-center mt-20 text-center">
-            <div className="w-16 h-16 mb-4 rounded-full bg-zinc-800/60 flex items-center justify-center text-gray-500">
-              {/* Ikon pencarian coret */}
-              <svg
-                className="w-8 h-8 text-gray-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <div className="search-page__empty-container">
+            <div className="search-page__empty">
+              <div className="search-page__empty-icon-wrapper">
+                {/* Ikon pencarian coret */}
+                <svg
+                  className="search-page__empty-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <line x1="4" y1="4" x2="18" y2="18" />
+                </svg>
+              </div>
+              <p className="search-page__empty-title">
+                Ups, film yang Anda cari tidak ditemukan.
+              </p>
+              <p className="search-page__empty-subtitle">
+                Coba periksa kembali ejaan kata kunci atau bersihkan filter pencarian.
+              </p>
+              <button
+                type="button"
+                className="search-page__reset-btn"
+                onClick={handleResetSearch}
               >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                <line x1="4" y1="4" x2="18" y2="18" />
-              </svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                Reset Pencarian
+              </button>
             </div>
-            <p className="text-gray-400 text-base md:text-lg">
-              Ups, film yang Anda cari tidak ditemukan.
-            </p>
+
+            {/* Rekomendasi Alternatif: Mungkin Anda Suka */}
+            <div className="search-page__recommendations">
+              <div className="search-page__recommendations-header">
+                <div className="search-page__recommendations-badge">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </div>
+                <h2 className="search-page__recommendations-title">
+                  Mungkin Anda Suka
+                </h2>
+              </div>
+
+              {recLoading && recommendations.length === 0 ? (
+                <div className="search-page__recommendations-grid">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <MovieCardSkeleton key={index} />
+                  ))}
+                </div>
+              ) : recommendations.length > 0 ? (
+                <div className="search-page__recommendations-grid">
+                  {recommendations.slice(0, 6).map((movie) => (
+                    <MovieCard
+                      key={movie.id}
+                      movie={movie}
+                      onToggleFavorite={toggleFavorite}
+                      isFavorite={isFavorite ? isFavorite(movie.id) : false}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
         )
       )}
