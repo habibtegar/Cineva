@@ -171,7 +171,7 @@ export default function Search({ toggleFavorite, isFavorite }) {
       .catch((err) => {
         if (!isActive.current) return;
         console.error('Search / Discover failed:', err);
-        setError('Pencarian gagal. Silakan coba lagi.');
+        setError('Search failed. Please try again.');
       })
       .finally(() => {
         if (isActive.current) setLoading(false);
@@ -237,12 +237,12 @@ export default function Search({ toggleFavorite, isFavorite }) {
         <input
           ref={searchInputRef}
           type="text"
-          placeholder="Cari judul film..."
+          placeholder="Search movies..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           className="search-page__input"
           autoFocus
-          aria-label="Cari judul film"
+          aria-label="Search movies"
         />
         {inputValue && (
           <button
@@ -266,9 +266,9 @@ export default function Search({ toggleFavorite, isFavorite }) {
             value={selectedGenre}
             onChange={(e) => setSelectedGenre(e.target.value)}
             className="w-full appearance-none bg-zinc-900/90 text-zinc-200 border border-zinc-800 hover:border-zinc-700 text-sm rounded-xl pl-3.5 pr-9 py-2.5 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition cursor-pointer shadow-sm"
-            aria-label="Filter berdasarkan genre"
+            aria-label="Filter by genre"
           >
-            <option value="" className="bg-zinc-900 text-zinc-300">Semua Genre</option>
+            <option value="" className="bg-zinc-900 text-zinc-300">All Genres</option>
             {genres.map((g) => (
               <option key={g.id} value={g.id} className="bg-zinc-900 text-zinc-200">
                 {g.name}
@@ -288,9 +288,9 @@ export default function Search({ toggleFavorite, isFavorite }) {
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
             className="w-full appearance-none bg-zinc-900/90 text-zinc-200 border border-zinc-800 hover:border-zinc-700 text-sm rounded-xl pl-3.5 pr-9 py-2.5 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition cursor-pointer shadow-sm"
-            aria-label="Filter berdasarkan tahun"
+            aria-label="Filter by year"
           >
-            <option value="" className="bg-zinc-900 text-zinc-300">Semua Tahun</option>
+            <option value="" className="bg-zinc-900 text-zinc-300">All Years</option>
             {YEARS.map((yr) => (
               <option key={yr} value={yr} className="bg-zinc-900 text-zinc-200">
                 {yr}
@@ -325,10 +325,10 @@ export default function Search({ toggleFavorite, isFavorite }) {
       {/* Results Count Summary */}
       {hasActiveFilterOrQuery && !loading && !error && (
         <p className="search-page__count">
-          {totalResults.toLocaleString()} film ditemukan
-          {trimmedUrl && <span> untuk <strong>&ldquo;{trimmedUrl}&rdquo;</strong></span>}
+          {totalResults.toLocaleString()} {totalResults === 1 ? 'movie' : 'movies'} found
+          {trimmedUrl && <span> for <strong>&ldquo;{trimmedUrl}&rdquo;</strong></span>}
           {selectedGenreName && <span className="text-zinc-300 font-medium"> &bull; Genre: {selectedGenreName}</span>}
-          {selectedYear && <span className="text-zinc-300 font-medium"> &bull; Tahun: {selectedYear}</span>}
+          {selectedYear && <span className="text-zinc-300 font-medium"> &bull; Year: {selectedYear}</span>}
         </p>
       )}
 
@@ -389,10 +389,10 @@ export default function Search({ toggleFavorite, isFavorite }) {
                 </svg>
               </div>
               <p className="search-page__empty-title">
-                Ups, film yang Anda cari tidak ditemukan.
+                Oops, no movies found.
               </p>
               <p className="search-page__empty-subtitle">
-                Coba periksa kembali ejaan kata kunci atau bersihkan filter pencarian.
+                Try adjusting your search or filters to find what you're looking for.
               </p>
               <button
                 type="button"
@@ -410,7 +410,7 @@ export default function Search({ toggleFavorite, isFavorite }) {
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                   <path d="M3 3v5h5" />
                 </svg>
-                Reset Pencarian
+                Reset Search
               </button>
             </div>
 
