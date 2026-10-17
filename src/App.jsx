@@ -4,6 +4,7 @@ import toast, { Toaster, useToasterStore } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import BackToTop from './components/BackToTop';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import MovieDetail from './pages/MovieDetail';
@@ -179,6 +180,7 @@ export default function App() {
         </Routes>
       </main>
       {!isAuthPage && <Footer />}
+      <BackToTop />
     </>
   );
 }
