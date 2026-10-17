@@ -147,24 +147,20 @@ export default function Register() {
       {/* Main Register Card */}
       <div className="relative w-full max-w-md bg-zinc-900/80 backdrop-blur-2xl border border-zinc-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/80 z-10 transition-all">
         {/* Cineva Brand Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-7">
           <Link
             to="/"
-            className="inline-flex flex-col items-center gap-2 group"
+            className="inline-block group focus:outline-none"
+            aria-label="Cineva Home"
           >
-            <img
-              src="/logo.png"
-              alt="Cineva Logo"
-              className="w-16 h-16 rounded-2xl shadow-xl shadow-amber-500/10 group-hover:scale-105 transition-transform"
-            />
-            <span className="text-2xl font-bold tracking-tight text-white group-hover:text-red-500 transition-colors">
+            <span className="text-3xl font-bold tracking-tight text-white group-hover:text-red-500 transition-colors">
               Cineva
             </span>
           </Link>
-          <h1 className="mt-2 text-xl font-semibold text-zinc-100 tracking-tight">
+          <h1 className="mt-2.5 text-lg sm:text-xl font-semibold text-zinc-100 tracking-tight">
             Daftar Akun Baru
           </h1>
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-1 text-xs sm:text-sm text-zinc-400">
             Mulai buat akun Cineva Anda hanya dalam hitungan detik
           </p>
         </div>
