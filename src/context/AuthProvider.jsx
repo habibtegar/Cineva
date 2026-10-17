@@ -39,6 +39,10 @@ export function AuthProvider({ children }) {
           email: currentUser.email || '',
           photoURL: currentUser.photoURL || '',
           emailVerified: currentUser.emailVerified,
+          metadata: {
+            creationTime: currentUser.metadata?.creationTime,
+            lastSignInTime: currentUser.metadata?.lastSignInTime,
+          },
         });
       } else {
         setUser(null);
@@ -73,6 +77,11 @@ export function AuthProvider({ children }) {
         displayName: loggedUser.displayName || loggedUser.email?.split('@')[0] || 'User',
         email: loggedUser.email || '',
         photoURL: loggedUser.photoURL || '',
+        emailVerified: loggedUser.emailVerified,
+        metadata: {
+          creationTime: loggedUser.metadata?.creationTime,
+          lastSignInTime: loggedUser.metadata?.lastSignInTime,
+        },
       };
       setUser(userData);
       toast.success(`Selamat datang, ${userData.displayName}!`);
@@ -138,6 +147,11 @@ export function AuthProvider({ children }) {
         displayName: loggedUser.displayName || loggedUser.email?.split('@')[0] || 'User',
         email: loggedUser.email || '',
         photoURL: loggedUser.photoURL || '',
+        emailVerified: loggedUser.emailVerified,
+        metadata: {
+          creationTime: loggedUser.metadata?.creationTime,
+          lastSignInTime: loggedUser.metadata?.lastSignInTime,
+        },
       };
       setUser(userData);
       toast.success(`Selamat datang, ${userData.displayName}!`);
@@ -162,7 +176,7 @@ export function AuthProvider({ children }) {
     }
     await updateProfile(auth.currentUser, {
       displayName: displayName?.trim() || null,
-      photoURL: photoURL?.trim() || null,
+      photoURL: photoURL ? photoURL.trim() : null,
     });
     try {
       await auth.currentUser.reload();
@@ -174,8 +188,12 @@ export function AuthProvider({ children }) {
       uid: current.uid,
       displayName: displayName?.trim() || current.displayName || 'User',
       email: current.email || '',
-      photoURL: photoURL !== undefined ? (photoURL?.trim() || '') : (current.photoURL || ''),
+      photoURL: current.photoURL || '',
       emailVerified: current.emailVerified,
+      metadata: {
+        creationTime: current.metadata?.creationTime,
+        lastSignInTime: current.metadata?.lastSignInTime,
+      },
     });
   };
 

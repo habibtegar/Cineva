@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { sendEmailVerification } from 'firebase/auth';
+import toast from 'react-hot-toast';
 import MovieCard from '../components/MovieCard';
 import { SkeletonCard } from '../components/Skeleton';
 import EditProfileModal from '../components/EditProfileModal';
 import { useAuth } from '../hooks/useAuth';
 import { useFavorites } from '../hooks/useFavorites';
+import { auth } from '../services/firebase';
+import { getAuthErrorMessage } from '../utils/authErrors';
 import '../components/MovieGrid.css';
 import './Profile.css';
 
@@ -18,6 +22,9 @@ export default function Profile({
   const fallbackFavoritesHook = useFavorites();
   const navigate = useNavigate();
   const [brokenAvatarUrl, setBrokenAvatarUrl] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
+  const [sortBy, setSortBy] = useState('recently_added');
 
   // Reset status avatar rusak jika photoURL pengguna diperbarui
   useEffect(() => {
@@ -30,7 +37,6 @@ export default function Profile({
   }, []);
 
   const avatarError = Boolean(brokenAvatarUrl && brokenAvatarUrl === user?.photoURL);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Prefer props passed from App.jsx, fallback to hook directly
   const favorites = propFavorites ?? fallbackFavoritesHook.favorites;
@@ -50,6 +56,67 @@ export default function Profile({
   const displayName = user?.displayName || 'Pengguna Cineva';
   const userInitial = displayName.charAt(0).toUpperCase() || 'U';
   const favoritesCount = favorites.length;
+
+  // Tanggal bergabung dari metadata Firebase (user.metadata.creationTime)
+  const memberSince = useMemo(() => {
+    const rawCreationTime =
+      user?.metadata?.creationTime || auth.currentUser?.metadata?.creationTime;
+    if (!rawCreationTime) return null;
+    try {
+      const date = new Date(rawCreationTime);
+      if (isNaN(date.getTime())) return null;
+      const month = date.toLocaleString('en-US', { month: 'long' });
+      const year = date.getFullYear();
+      return `Member since ${month} ${year}`;
+    } catch {
+      return null;
+    }
+  }, [user?.metadata?.creationTime]);
+
+  const isVerified = Boolean(user?.emailVerified ?? auth.currentUser?.emailVerified);
+
+  const handleSendVerification = async () => {
+    if (!auth.currentUser) return;
+    setIsSendingVerification(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      toast.success('Verification email sent! Check your inbox or spam folder.');
+    } catch (err) {
+      console.error('Failed to send verification email:', err);
+      toast.error(getAuthErrorMessage(err) || 'Failed to send verification email.');
+    } finally {
+      setIsSendingVerification(false);
+    }
+  };
+
+  // Penyortiran kartu film favorit secara real-time
+  const sortedFavorites = useMemo(() => {
+    if (!favorites || favorites.length === 0) return [];
+    const list = [...favorites];
+    switch (sortBy) {
+      case 'highest_rating':
+        return list.sort((a, b) => {
+          const ratingA = Number(a.vote_average) || 0;
+          const ratingB = Number(b.vote_average) || 0;
+          return ratingB - ratingA;
+        });
+      case 'release_date':
+        return list.sort((a, b) => {
+          const dateA = a.release_date ? new Date(a.release_date).getTime() : 0;
+          const dateB = b.release_date ? new Date(b.release_date).getTime() : 0;
+          return dateB - dateA;
+        });
+      case 'title_asc':
+        return list.sort((a, b) => {
+          const titleA = (a.title || a.name || '').toLowerCase();
+          const titleB = (b.title || b.name || '').toLowerCase();
+          return titleA.localeCompare(titleB);
+        });
+      case 'recently_added':
+      default:
+        return list;
+    }
+  }, [favorites, sortBy]);
 
   // Unauthenticated View
   if (!user) {
@@ -95,7 +162,7 @@ export default function Profile({
               className="profile-header__avatar-img"
               referrerPolicy="no-referrer"
               onError={() => {
-                console.error("Gagal memuat foto avatar Profile:", user?.photoURL);
+                console.error('Gagal memuat foto avatar Profile:', user?.photoURL);
                 setBrokenAvatarUrl(user?.photoURL);
               }}
             />
@@ -109,7 +176,55 @@ export default function Profile({
         <div className="profile-header__body">
           <div className="profile-header__info">
             <h1 className="profile-header__name">{displayName}</h1>
-            <p className="profile-header__email">{user.email}</p>
+
+            {/* Email & Status Badge */}
+            <div className="profile-header__email-row">
+              <span className="profile-header__email">{user.email}</span>
+              {isVerified ? (
+                <span className="profile-header__badge profile-header__badge--verified" title="Email is verified">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>Verified</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendVerification}
+                  disabled={isSendingVerification}
+                  className="profile-header__verify-btn"
+                  title="Send verification email"
+                >
+                  {isSendingVerification ? (
+                    <>
+                      <span className="profile-spinner-mini" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </svg>
+                      <span>Verify Email</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Member Since (dari metadata Firebase) */}
+            {memberSince && (
+              <p className="profile-header__member-since">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <span>{memberSince}</span>
+              </p>
+            )}
 
             {/* Statistik Murni dari Firestore */}
             <div className="profile-header__stat">
@@ -151,7 +266,40 @@ export default function Profile({
       {/* Daftar Film Favorit — Menggunakan Card & Grid Asli Home */}
       <section className="profile-content">
         <div className="profile-content__header">
-          <h2 className="profile-content__title">Favorited Movies</h2>
+          <div className="profile-content__title-wrap">
+            <h2 className="profile-content__title">Favorited Movies</h2>
+            {favorites.length > 0 && (
+              <span className="profile-content__count-badge">{favorites.length}</span>
+            )}
+          </div>
+
+          {favorites.length > 0 && (
+            <div className="profile-sort">
+              <label htmlFor="profile-sort-select" className="profile-sort__label">
+                <svg className="profile-sort__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18M6 12h12m-9 6h6" />
+                </svg>
+                <span className="profile-sort__label-text">Sort by:</span>
+              </label>
+              <div className="profile-sort__select-wrapper">
+                <select
+                  id="profile-sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="profile-sort__select"
+                  aria-label="Sort favorited movies"
+                >
+                  <option value="recently_added">Recently Added</option>
+                  <option value="highest_rating">Highest Rating</option>
+                  <option value="release_date">Release Date</option>
+                  <option value="title_asc">Title (A–Z)</option>
+                </select>
+                <svg className="profile-sort__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -160,9 +308,9 @@ export default function Profile({
               <SkeletonCard key={i} />
             ))}
           </div>
-        ) : favorites.length > 0 ? (
+        ) : sortedFavorites.length > 0 ? (
           <div className="movie-grid__list">
-            {favorites.map((movie) => (
+            {sortedFavorites.map((movie) => (
               <MovieCard
                 key={movie.id}
                 movie={movie}
