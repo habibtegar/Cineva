@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import MovieGrid from '../components/MovieGrid';
 import ErrorState from '../components/ErrorState';
 import { getPersonDetail, getPersonMovieCredits, getImageUrl } from '../services/tmdb';
@@ -7,13 +7,14 @@ import './PersonDetail.css';
 
 export default function PersonDetail({ toggleFavorite, isFavorite }) {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [person, setPerson] = useState(null);
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bioExpanded, setBioExpanded] = useState(false);
 
-  const fetchPersonData = () => {
+  const fetchPersonData = useCallback(() => {
     setLoading(true);
     setError(null);
 
@@ -33,12 +34,12 @@ export default function PersonDetail({ toggleFavorite, isFavorite }) {
         setError('Could not load actor details.');
       })
       .finally(() => setLoading(false));
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchPersonData();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [fetchPersonData]);
 
   if (loading) {
     return (
@@ -58,23 +59,32 @@ export default function PersonDetail({ toggleFavorite, isFavorite }) {
 
   const photo = getImageUrl(person.profile_path, 'h632');
 
-  // Format birth date & calculate age
+  // Format birth date & calculate exact age
   const formatBirth = (dateStr) => {
     if (!dateStr) return null;
     try {
-      const date = new Date(dateStr);
-      const formatted = date.toLocaleDateString('en-US', {
+      const birthDate = new Date(dateStr);
+      if (isNaN(birthDate.getTime())) return dateStr;
+
+      const formatted = birthDate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
-      // Age calculation
-      const birthYear = date.getFullYear();
-      const currentYear = new Date().getFullYear();
-      const age = person.deathday
-        ? new Date(person.deathday).getFullYear() - birthYear
-        : currentYear - birthYear;
-      return `${formatted} (${age} years old)`;
+
+      // Calculate accurate age based on deathday (if deceased) or current date
+      const endDate = person.deathday ? new Date(person.deathday) : new Date();
+      let age = endDate.getFullYear() - birthDate.getFullYear();
+      const monthDiff = endDate.getMonth() - birthDate.getMonth();
+
+      if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age >= 0) {
+        return `${formatted} (${age} years old)`;
+      }
+      return formatted;
     } catch {
       return dateStr;
     }
@@ -88,7 +98,7 @@ export default function PersonDetail({ toggleFavorite, isFavorite }) {
     <div className="person-detail page-container">
       {/* Back button */}
       <div className="person-detail__back">
-        <button onClick={() => window.history.back()} className="person-detail__back-btn">
+        <button onClick={() => navigate(-1)} className="person-detail__back-btn" aria-label="Go back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />

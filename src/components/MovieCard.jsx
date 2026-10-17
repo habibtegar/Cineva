@@ -71,6 +71,14 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
         <h3 className="movie-card__title line-clamp-1" title={movie.title}>
           {movie.title}
         </h3>
+        {movie.character && (
+          <p
+            className="movie-card__character text-zinc-400 text-xs line-clamp-1"
+            title={movie.character}
+          >
+            {movie.character}
+          </p>
+        )}
         {/* Year — higher contrast #9ca3af text-xs */}
         <p className="movie-card__year text-gray-400 text-xs">{year}</p>
       </div>
