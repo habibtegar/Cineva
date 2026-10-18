@@ -17,14 +17,14 @@ function getAvatarUrl(path) {
   return `https://image.tmdb.org/t/p/w185${path}`;
 }
 
-// Format review date
+// Format review date in English (e.g. Oct 14, 2026)
 function formatReviewDate(dateStr) {
   if (!dateStr) return '';
   try {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      year: 'numeric',
+    return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
     });
   } catch {
     return dateStr.slice(0, 10);
@@ -95,7 +95,7 @@ function ReviewItem({ review }) {
         <button
           type="button"
           className="detail__review-readmore"
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => setExpanded((prev) => !prev)}
         >
           {expanded ? 'Show Less' : 'Read More'}
         </button>
@@ -380,27 +380,33 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
         {cast.length > 0 && (
           <section className="detail__cast">
             <h2 className="detail__section-title">Cast</h2>
-            <div className="detail__cast-list overflow-x-auto no-scrollbar flex gap-4">
+            <div className="detail__cast-list overflow-x-auto scrollbar-none flex gap-4">
               {cast.map((person) => (
-                <CastCard key={person.credit_id || person.id} person={person} />
+                <CastCard
+                  key={person.credit_id || person.id}
+                  person={person}
+                  cast={person}
+                />
               ))}
             </div>
           </section>
         )}
 
         {/* Reviews */}
-        {reviews.length > 0 && (
-          <section className="detail__reviews">
-            <h2 className="detail__section-title">
-              Reviews <span className="detail__reviews-count">({reviews.length})</span>
-            </h2>
+        <section className="detail__reviews">
+          <h2 className="detail__section-title">
+            Reviews {reviews.length > 0 && <span className="detail__reviews-count">({reviews.length})</span>}
+          </h2>
+          {reviews.length > 0 ? (
             <div className="detail__reviews-list">
               {reviews.map((rev) => (
                 <ReviewItem key={rev.id} review={rev} />
               ))}
             </div>
-          </section>
-        )}
+          ) : (
+            <p className="text-zinc-500 text-sm py-4">No reviews yet for this movie.</p>
+          )}
+        </section>
 
         {/* Similar Movies */}
         {similar.length > 0 && (

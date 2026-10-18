@@ -4,13 +4,8 @@
   width: 110px;
   text-decoration: none;
   display: block;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
 }
 
-.cast-card:hover {
-  transform: translateY(-4px);
-}
 
 .cast-card:hover .cast-card__photo {
   border-color: rgba(255, 255, 255, 0.3);
