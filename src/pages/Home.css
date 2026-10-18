@@ -283,15 +283,23 @@
   }
 
   .home__tabs {
-    gap: 2px;
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .home__tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .home__tab {
-    padding: 6px 12px;
-    font-size: 0.78rem;
-    flex: 1;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    white-space: nowrap;
     text-align: center;
   }
 }
+

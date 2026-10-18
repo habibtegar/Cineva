@@ -175,13 +175,13 @@ export default function Home({ toggleFavorite, isFavorite }) {
         {/* ---- Category tabs (left) + Genre filter (right) ---- */}
         <div className="home__controls">
           {/* Tabs: Trending, Popular, Top Rated, Upcoming */}
-          <div className="home__tabs" role="tablist">
+          <div className="home__tabs flex overflow-x-auto scrollbar-none gap-2 pb-1" role="tablist">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 role="tab"
                 aria-selected={activeTab === tab.key}
-                className={`home__tab${activeTab === tab.key ? ' home__tab--active' : ''}`}
+                className={`home__tab shrink-0${activeTab === tab.key ? ' home__tab--active' : ''}`}
                 onClick={() => handleTabChange(tab.key)}
               >
                 {tab.label}
@@ -226,7 +226,7 @@ export default function Home({ toggleFavorite, isFavorite }) {
         {/* ---- Movie section ---- */}
         {loading && page === 1 ? (
           <section className="movie-grid">
-            <div className="movie-grid__list">
+            <div className="movie-grid__list grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
               {Array.from({ length: PAGE_SIZE }).map((_, index) => (
                 <MovieCardSkeleton key={index} />
               ))}

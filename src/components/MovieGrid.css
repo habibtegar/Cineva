@@ -23,10 +23,10 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 639px) {
   .movie-grid__list {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px;
   }
 
   .movie-grid__title {
@@ -34,3 +34,4 @@
     margin-bottom: 12px;
   }
 }
+

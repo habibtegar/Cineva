@@ -704,9 +704,11 @@ export default function Navbar() {
         )}
       </nav>
 
-      {/* Mobile drawer backdrop */}
+      {/* Mobile drawer backdrop overlay */}
       <div
-        className={`navbar__backdrop${drawerOpen ? ' navbar__backdrop--visible' : ''}`}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity duration-300 cursor-pointer ${
+          drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
         aria-hidden="true"
         onClick={() => setDrawerOpen(false)}
       />
@@ -780,7 +782,7 @@ export default function Navbar() {
                 }
               }}
             >
-              Logout
+              Sign Out
             </button>
           ) : (
             <button

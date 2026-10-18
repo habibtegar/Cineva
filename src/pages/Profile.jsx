@@ -303,13 +303,13 @@ export default function Profile({
         </div>
 
         {isLoading ? (
-          <div className="movie-grid__list">
+          <div className="movie-grid__list grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : sortedFavorites.length > 0 ? (
-          <div className="movie-grid__list">
+          <div className="movie-grid__list grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {sortedFavorites.map((movie) => (
               <MovieCard
                 key={movie.id}
