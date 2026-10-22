@@ -85,6 +85,12 @@
   flex-shrink: 0;
 }
 
+.movie-card__rating-badge--na {
+  background-color: rgba(39, 39, 42, 0.8) !important;
+  color: #a1a1aa !important;
+  border: 1px solid rgba(63, 63, 70, 0.5) !important;
+}
+
 /* ---- Favorite button — top-right ---- */
 .movie-card__fav {
   position: absolute;

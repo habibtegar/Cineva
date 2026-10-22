@@ -1,23 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MovieGrid from '../components/MovieGrid';
 import MovieCard from '../components/MovieCard';
 import MovieCardSkeleton from '../components/MovieCardSkeleton';
 import ErrorState from '../components/ErrorState';
 import { searchMovies, getGenres, discoverMovies, getTrending, getPopular } from '../services/tmdb';
+import { saveRecentSearch } from '../utils/recentSearches';
 import './Search.css';
-
-/**
- * Local debounce hook for the inline search input on the Search page.
- */
-function useDebounce(value, delay) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
 
 // Generate array of years from current year backwards to 2000
 const CURRENT_YEAR = new Date().getFullYear();
@@ -28,13 +17,10 @@ export default function Search({ toggleFavorite, isFavorite }) {
   const navigate = useNavigate();
   const urlQuery = searchParams.get('q') || '';
 
-  // Local input state so user can refine query directly on the page
-  const [inputValue, setInputValue] = useState(urlQuery);
-  const debouncedInput = useDebounce(inputValue, 400);
-
-  // Filter states: genre & year
+  // Filter states: genre, year, sort
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
+  const [sortBy, setSortBy] = useState('relevance');
   const [genres, setGenres] = useState([]);
 
   const [results, setResults] = useState([]);
@@ -45,7 +31,6 @@ export default function Search({ toggleFavorite, isFavorite }) {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const abortRef = useRef(null);
-  const searchInputRef = useRef(null);
 
   // Rekomendasi alternatif saat hasil pencarian kosong
   const [recommendations, setRecommendations] = useState([]);
@@ -53,13 +38,13 @@ export default function Search({ toggleFavorite, isFavorite }) {
 
   // Dynamic Document Title: ubah judul tab browser untuk halaman Search
   useEffect(() => {
-    const query = (urlQuery || inputValue).trim();
+    const query = urlQuery.trim();
     if (query) {
       document.title = `Search: ${query} - Cineva`;
     } else {
       document.title = 'Search Movies - Cineva';
     }
-  }, [urlQuery, inputValue]);
+  }, [urlQuery]);
 
   // Fetch official TMDB genre list on mount
   useEffect(() => {
@@ -102,31 +87,24 @@ export default function Search({ toggleFavorite, isFavorite }) {
     };
   }, []);
 
-  // Reset pencarian dan kembalikan filter ke default
-  const handleResetSearch = () => {
-    setInputValue('');
+  // Reset pencarian dan kembalikan filter serta pengurutan ke default
+  const handleClearSearch = () => {
     setSelectedGenre('');
     setSelectedYear('');
+    setSortBy('relevance');
     setResults([]);
     setTotalResults(0);
     setTotalPages(1);
     navigate('/search', { replace: true });
-    searchInputRef.current?.focus();
   };
 
-  // Sync input with URL param when navigating from Navbar
+  // Sync recent searches with URL param
   useEffect(() => {
-    setInputValue(urlQuery);
     setPage(1);
-  }, [urlQuery]);
-
-  // Update URL when debounced input changes (keeps browser history consistent)
-  useEffect(() => {
-    const trimmed = debouncedInput.trim();
-    if (trimmed.length >= 2 && trimmed !== urlQuery) {
-      navigate(`/search?q=${encodeURIComponent(trimmed)}`, { replace: true });
+    if (urlQuery.trim()) {
+      saveRecentSearch(urlQuery.trim());
     }
-  }, [debouncedInput, navigate, urlQuery]);
+  }, [urlQuery]);
 
   // Fetch results whenever URL query OR filters change
   useEffect(() => {
@@ -214,51 +192,51 @@ export default function Search({ toggleFavorite, isFavorite }) {
   const hasMore = page < totalPages;
   const selectedGenreName = genres.find((g) => String(g.id) === String(selectedGenre))?.name || '';
   const hasActiveFilterOrQuery = Boolean(trimmedUrl || selectedGenre || selectedYear);
-  const movies = results;
+
+  // Client-side sorting: Most Relevant, Highest Rating, Latest Release
+  const sortedMovies = useMemo(() => {
+    if (!results || results.length === 0) return [];
+    if (sortBy === 'rating_desc') {
+      return [...results].sort((a, b) => (Number(b.vote_average) || 0) - (Number(a.vote_average) || 0));
+    }
+    if (sortBy === 'release_desc') {
+      return [...results].sort((a, b) => {
+        const timeA = a.release_date ? new Date(a.release_date).getTime() : 0;
+        const timeB = b.release_date ? new Date(b.release_date).getTime() : 0;
+        return timeB - timeA;
+      });
+    }
+    return results;
+  }, [results, sortBy]);
+
+  const movies = sortedMovies;
   const isLoading = loading;
 
   return (
     <div className="search-page page-container">
-      {/* Inline search input on page */}
-      <form
-        className="search-page__bar transition-all duration-200 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-600"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const trimmed = inputValue.trim();
-          if (trimmed && trimmed !== urlQuery) {
-            navigate(`/search?q=${encodeURIComponent(trimmed)}`, { replace: true });
-          }
-        }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder="Search movies..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          className="search-page__input focus:outline-none focus:ring-0"
-          autoFocus
-          aria-label="Search movies"
-        />
-        {inputValue && (
-          <button
-            type="button"
-            className="search-page__clear"
-            onClick={() => { setInputValue(''); navigate('/search'); }}
-            aria-label="Clear search"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        )}
-      </form>
+      {/* Clean Heading & Results Count */}
+      <div className="mb-5 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          {trimmedUrl ? `Results for "${trimmedUrl}"` : 'Explore Movies'}
+        </h1>
+        <p className="text-sm text-zinc-400 mt-1.5 flex flex-wrap items-center gap-1.5">
+          <span>{totalResults.toLocaleString()} {totalResults === 1 ? 'movie' : 'movies'} found</span>
+          {selectedGenreName && (
+            <>
+              <span className="text-zinc-600">&bull;</span>
+              <span className="text-zinc-300 font-medium">{selectedGenreName}</span>
+            </>
+          )}
+          {selectedYear && (
+            <>
+              <span className="text-zinc-600">&bull;</span>
+              <span className="text-zinc-300 font-medium">{selectedYear}</span>
+            </>
+          )}
+        </p>
+      </div>
 
-      {/* Advanced Filter Dropdowns (Genre & Year) */}
+      {/* Advanced Filter Dropdowns (Genre, Year, Sort By) langsung di bawah heading */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         {/* Genre Dropdown */}
         <div className="relative flex-1 min-w-[150px] sm:min-w-[180px]">
@@ -304,13 +282,33 @@ export default function Search({ toggleFavorite, isFavorite }) {
           </span>
         </div>
 
+        {/* Dropdown Sort By (di samping filter tahun) */}
+        <div className="relative flex-1 min-w-[150px] sm:min-w-[170px]">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full appearance-none bg-zinc-900/90 text-zinc-200 border border-zinc-800 hover:border-zinc-700 text-sm rounded-xl pl-3.5 pr-9 py-2.5 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition cursor-pointer shadow-sm"
+            aria-label="Sort by"
+          >
+            <option value="relevance" className="bg-zinc-900 text-zinc-200">Most Relevant</option>
+            <option value="rating_desc" className="bg-zinc-900 text-zinc-200">Highest Rating</option>
+            <option value="release_desc" className="bg-zinc-900 text-zinc-200">Latest Release</option>
+          </select>
+          <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-zinc-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </div>
+
         {/* Reset Filters button */}
-        {(selectedGenre || selectedYear) && (
+        {(selectedGenre || selectedYear || sortBy !== 'relevance') && (
           <button
             type="button"
             onClick={() => {
               setSelectedGenre('');
               setSelectedYear('');
+              setSortBy('relevance');
             }}
             className="px-3.5 py-2.5 rounded-xl text-xs font-medium bg-zinc-800/80 hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white border border-zinc-700/60 transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm"
           >
@@ -321,16 +319,6 @@ export default function Search({ toggleFavorite, isFavorite }) {
           </button>
         )}
       </div>
-
-      {/* Results Count Summary */}
-      {hasActiveFilterOrQuery && !loading && !error && (
-        <p className="search-page__count">
-          {totalResults.toLocaleString()} {totalResults === 1 ? 'movie' : 'movies'} found
-          {trimmedUrl && <span> for <strong>&ldquo;{trimmedUrl}&rdquo;</strong></span>}
-          {selectedGenreName && <span className="text-zinc-300 font-medium"> &bull; Genre: {selectedGenreName}</span>}
-          {selectedYear && <span className="text-zinc-300 font-medium"> &bull; Year: {selectedYear}</span>}
-        </p>
-      )}
 
       {error && <ErrorState message={error} />}
 
@@ -370,47 +358,54 @@ export default function Search({ toggleFavorite, isFavorite }) {
         </>
       ) : (
         !isLoading && !error && movies.length === 0 && (
-          <div className="search-page__empty-container">
-            <div className="search-page__empty">
-              <div className="search-page__empty-icon-wrapper">
-                {/* Ikon pencarian coret */}
+          <div className="search-page__empty-container py-12 px-4">
+            <div className="search-page__empty flex flex-col items-center text-center max-w-md mx-auto">
+              {/* Ikon kaca pembesar redup */}
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-zinc-900/90 border border-zinc-800/80 flex items-center justify-center text-zinc-500 mb-5 shadow-inner">
                 <svg
-                  className="search-page__empty-icon"
+                  className="w-9 h-9 sm:w-10 sm:h-10 text-zinc-500/80"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.75"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  <line x1="4" y1="4" x2="18" y2="18" />
                 </svg>
               </div>
-              <p className="search-page__empty-title">
-                Oops, no movies found.
+
+              {/* Teks pemberitahuan yang jelas */}
+              <h2 className="text-xl sm:text-2xl font-bold text-zinc-100 mb-2">
+                {trimmedUrl ? `No movies found for "${trimmedUrl}"` : 'No movies found'}
+              </h2>
+              <p className="text-sm text-zinc-400 max-w-sm mb-6 leading-relaxed">
+                {trimmedUrl || selectedGenre || selectedYear
+                  ? "We couldn't find any results matching your search. Please check your spelling or try different filters."
+                  : "Explore thousands of movies by entering a title in the search box or selecting filters above."}
               </p>
-              <p className="search-page__empty-subtitle">
-                Try adjusting your search or filters to find what you're looking for.
-              </p>
+
+              {/* Tombol Clear Search */}
               <button
                 type="button"
-                className="search-page__reset-btn"
-                onClick={handleResetSearch}
+                className="search-page__reset-btn inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:scale-95 transition shadow-lg shadow-red-600/20 cursor-pointer"
+                onClick={handleClearSearch}
               >
                 <svg
+                  className="w-4 h-4"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                  <path d="M3 3v5h5" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
-                Reset Search
+                Clear Search
               </button>
             </div>
 

@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getImageUrl } from '../services/tmdb';
 import './MovieCard.css';
 
 export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
+  const [imgError, setImgError] = useState(false);
   const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
-  const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
-  const poster = getImageUrl(movie.poster_path, 'w342');
+  const hasRating = typeof movie.vote_average === 'number' && movie.vote_average > 0;
+  const ratingText = hasRating ? movie.vote_average.toFixed(1) : '-';
+  const poster = !imgError && movie.poster_path ? getImageUrl(movie.poster_path, 'w342') : null;
 
   const handleFavClick = (e) => {
     e.preventDefault();
@@ -22,26 +25,55 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
             alt={movie.title}
             className="movie-card__poster"
             loading="lazy"
+            onError={() => setImgError(true)}
           />
         ) : (
-          <div className="movie-card__no-poster">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg>
+          <div className="w-full h-full bg-gradient-to-t from-zinc-950 via-zinc-900 to-zinc-800 flex flex-col justify-between p-3 select-none relative overflow-hidden border border-zinc-800/60">
+            {/* Logo teks kecil Cineva di atas */}
+            <div className="flex items-center justify-center w-full pt-7">
+              <span className="text-[10px] font-black tracking-widest text-red-500 uppercase flex items-center gap-1 drop-shadow-sm">
+                Cineva<span className="inline-block w-1 h-1 rounded-full bg-red-500" />
+              </span>
+            </div>
+
+            {/* Judul film di bagian tengah */}
+            <div className="my-auto py-2 text-center flex flex-col items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center text-zinc-400 mb-2 shadow-inner">
+                <svg className="w-4 h-4 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                  <line x1="7" y1="7" x2="17" y2="17" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                </svg>
+              </div>
+              <p className="text-xs font-semibold text-zinc-200 line-clamp-3 leading-snug px-1">
+                {movie.title}
+              </p>
+            </div>
+
+            {/* Spacing penyeimbang bawah */}
+            <div className="h-2" />
           </div>
         )}
 
         {/* Gradient overlay */}
         <div className="movie-card__overlay" />
 
-        {/* Rating badge — top-left, always visible */}
-        <div className="movie-card__rating-badge" aria-label={`Rating: ${rating}`}>
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        {/* Rating badge — top-left */}
+        <div
+          className={`movie-card__rating-badge${
+            !hasRating ? ' movie-card__rating-badge--na bg-zinc-800/80 text-zinc-400 border border-zinc-700/50' : ''
+          }`}
+          aria-label={hasRating ? `Rating: ${ratingText}` : 'Rating: Not available'}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className={hasRating ? 'text-amber-400' : 'text-zinc-400'}
+            aria-hidden="true"
+          >
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
           </svg>
-          {rating}
+          <span>{hasRating ? ratingText : '-'}</span>
         </div>
       </Link>
 

@@ -321,6 +321,120 @@
   animation: spinner 0.7s linear infinite;
 }
 
+/* ============ Recent Searches Dropdown ============ */
+.navbar__recent-searches {
+  padding: 4px 0 6px 0;
+}
+
+.navbar__recent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.navbar__recent-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #71717a;
+}
+
+.navbar__recent-clear-btn {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #ef4444;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.navbar__recent-clear-btn:hover {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.navbar__recent-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar__recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background-color 0.15s ease;
+}
+
+.navbar__recent-item:last-child {
+  border-bottom: none;
+}
+
+.navbar__recent-item:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.navbar__recent-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.navbar__recent-clock-icon {
+  width: 14px;
+  height: 14px;
+  color: #71717a;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.navbar__recent-item:hover .navbar__recent-clock-icon {
+  color: #a1a1aa;
+}
+
+.navbar__recent-text {
+  font-size: 0.85rem;
+  color: #e4e4e7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  font-weight: 400;
+}
+
+.navbar__recent-delete-btn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.navbar__recent-delete-btn:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.navbar__recent-delete-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* ============ Profile Indicator & Dropdown ============ */
 .navbar__profile-wrapper {
   position: relative;

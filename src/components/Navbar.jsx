@@ -4,7 +4,78 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { searchMovies, getImageUrl } from '../services/tmdb';
 import { useAuth } from '../hooks/useAuth';
+import {
+  getRecentSearches,
+  saveRecentSearch,
+  removeRecentSearch as deleteRecentSearch,
+  clearAllRecentSearches,
+} from '../utils/recentSearches';
 import './Navbar.css';
+
+function RecentSearchesList({ searches, onSelect, onRemove, onClearAll }) {
+  if (!searches || searches.length === 0) return null;
+
+  return (
+    <div className="navbar__recent-searches">
+      <div className="navbar__recent-header">
+        <span className="navbar__recent-title">Recent Searches</span>
+        <button
+          type="button"
+          className="navbar__recent-clear-btn"
+          onClick={onClearAll}
+          aria-label="Clear all recent searches"
+        >
+          Clear all
+        </button>
+      </div>
+      <div className="navbar__recent-list">
+        {searches.map((item, idx) => (
+          <div
+            key={`${item}-${idx}`}
+            className="navbar__recent-item"
+            onClick={() => onSelect(item)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(item);
+              }
+            }}
+          >
+            <div className="navbar__recent-item-left">
+              <svg
+                className="navbar__recent-clock-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span className="navbar__recent-text">{item}</span>
+            </div>
+            <button
+              type="button"
+              className="navbar__recent-delete-btn"
+              onClick={(e) => onRemove(e, item)}
+              title={`Remove ${item}`}
+              aria-label={`Remove ${item} from search history`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Debounce utility — returns debounced value after delay ms.
@@ -57,6 +128,20 @@ export default function Navbar() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [brokenAvatarUrl, setBrokenAvatarUrl] = useState(null);
+  const [recentSearches, setRecentSearches] = useState(() => getRecentSearches());
+
+  // Sinkronkan daftar recent searches jika ada pembaruan di window atau storage
+  useEffect(() => {
+    const handleSync = () => {
+      setRecentSearches(getRecentSearches());
+    };
+    window.addEventListener('cineva_recent_searches_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('cineva_recent_searches_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   // Reset status avatar rusak jika URL foto user diperbarui
   useEffect(() => {
@@ -143,13 +228,18 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close dropdowns and drawer when route changes
+  // Close dropdowns and drawer when route changes, and sync query with URL on /search
   useEffect(() => {
     setDrawerOpen(false);
     setShowDropdown(false);
     setShowProfileMenu(false);
     setMobileSearchOpen(false);
-    setQuery('');
+    if (location.pathname === '/search') {
+      const searchParams = new URLSearchParams(location.search);
+      setQuery(searchParams.get('q') || '');
+    } else {
+      setQuery('');
+    }
   }, [location.pathname, location.search]);
 
   // Scroll detection: deteksi apakah layar sudah di-scroll (window.scrollY > 10)
@@ -183,7 +273,35 @@ export default function Navbar() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  const handleSelectRecentSearch = (searchItem) => {
+    saveRecentSearch(searchItem);
+    setQuery(searchItem);
+    setShowDropdown(false);
+    setMobileSearchOpen(false);
+    navigate(`/search?q=${encodeURIComponent(searchItem)}`);
+    inputRef.current?.blur();
+    mobileInputRef.current?.blur();
+  };
+
+  const handleRemoveRecentSearch = (e, item) => {
+    e.stopPropagation();
+    const remaining = deleteRecentSearch(item);
+    if (remaining.length === 0 && !query.trim()) {
+      setShowDropdown(false);
+    }
+  };
+
+  const handleClearAllRecentSearches = (e) => {
+    e.stopPropagation();
+    clearAllRecentSearches();
+    setShowDropdown(false);
+  };
+
   const handleSelectMovie = (movieId) => {
+    const trimmed = query.trim();
+    if (trimmed) {
+      saveRecentSearch(trimmed);
+    }
     setShowDropdown(false);
     setShowProfileMenu(false);
     setMobileSearchOpen(false);
@@ -196,6 +314,7 @@ export default function Navbar() {
     if (e) e.preventDefault();
     const trimmed = query.trim();
     if (trimmed) {
+      saveRecentSearch(trimmed);
       setShowDropdown(false);
       setMobileSearchOpen(false);
       navigate(`/search?q=${encodeURIComponent(trimmed)}`);
@@ -245,8 +364,7 @@ export default function Navbar() {
 
             <div className="navbar__actions">
               {/* Desktop Search with Live Dropdown */}
-              {!isSearchPage && (
-                <div className="navbar__search-wrapper" ref={searchContainerRef}>
+              <div className="navbar__search-wrapper" ref={searchContainerRef}>
                 <form className="navbar__search" onSubmit={handleSearchSubmit}>
                   <svg className="navbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8" />
@@ -258,11 +376,23 @@ export default function Navbar() {
                     placeholder="Search movies..."
                     value={query}
                     onChange={(e) => {
-                      setQuery(e.target.value);
-                      if (e.target.value.trim().length >= 2) setShowDropdown(true);
+                      const val = e.target.value;
+                      setQuery(val);
+                      if (val.trim().length >= 2) {
+                        setShowDropdown(true);
+                      } else if (!val.trim() && recentSearches.length > 0) {
+                        setShowDropdown(true);
+                      }
                     }}
                     onFocus={() => {
                       if (query.trim().length >= 2 && searchResults.length > 0) {
+                        setShowDropdown(true);
+                      } else if (!query.trim() && recentSearches.length > 0) {
+                        setShowDropdown(true);
+                      }
+                    }}
+                    onClick={() => {
+                      if (!query.trim() && recentSearches.length > 0) {
                         setShowDropdown(true);
                       }
                     }}
@@ -276,8 +406,15 @@ export default function Navbar() {
                       onClick={() => {
                         setQuery('');
                         setSearchResults([]);
-                        setShowDropdown(false);
                         inputRef.current?.focus();
+                        if (location.pathname === '/search') {
+                          navigate('/search');
+                        }
+                        if (recentSearches.length > 0) {
+                          setShowDropdown(true);
+                        } else {
+                          setShowDropdown(false);
+                        }
                       }}
                       aria-label="Clear search"
                     >
@@ -289,71 +426,83 @@ export default function Navbar() {
                   )}
                 </form>
 
-                {/* Live search dropdown (Max 5 results) */}
-                {showDropdown && query.trim().length >= 2 && (
+                {/* Dropdown: Kondisi A (Recent Searches) & Kondisi B (Live TMDB preview) */}
+                {showDropdown && (query.trim().length >= 2 || (!query.trim() && recentSearches.length > 0)) && (
                   <div className="navbar__dropdown">
-                    {isSearching ? (
-                      <div className="navbar__dropdown-loading">
-                        <span className="navbar__dropdown-spinner" />
-                        <span>Searching movies...</span>
-                      </div>
-                    ) : searchResults.length > 0 ? (
-                      <>
-                        <div className="navbar__dropdown-list">
-                          {searchResults.map((movie) => {
-                            const poster = getImageUrl(movie.poster_path, 'w92');
-                            const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
-                            const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
-
-                            return (
-                              <button
-                                key={movie.id}
-                                type="button"
-                                className="navbar__dropdown-item"
-                                onClick={() => handleSelectMovie(movie.id)}
-                              >
-                                {poster ? (
-                                  <img src={poster} alt={movie.title} className="navbar__dropdown-poster" />
-                                ) : (
-                                  <div className="navbar__dropdown-poster navbar__dropdown-poster--empty">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                      <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-                                      <line x1="7" y1="7" x2="17" y2="17" />
-                                    </svg>
-                                  </div>
-                                )}
-                                <div className="navbar__dropdown-info">
-                                  <h4 className="navbar__dropdown-title">{movie.title}</h4>
-                                  <div className="navbar__dropdown-meta">
-                                    <span className="navbar__dropdown-year">{year}</span>
-                                    {rating && (
-                                      <span className="navbar__dropdown-rating">
-                                        ★ {rating}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <button
-                          type="button"
-                          className="navbar__dropdown-footer"
-                          onClick={handleSearchSubmit}
-                        >
-                          See all results for "{query}" &rarr;
-                        </button>
-                      </>
+                    {!query.trim() ? (
+                      /* Kondisi A: Input Fokus & Kosong -> Tampilkan Recent Searches */
+                      <RecentSearchesList
+                        searches={recentSearches}
+                        onSelect={handleSelectRecentSearch}
+                        onRemove={handleRemoveRecentSearch}
+                        onClearAll={handleClearAllRecentSearches}
+                      />
                     ) : (
-                      <div className="navbar__dropdown-empty">
-                        No movies found
-                      </div>
+                      /* Kondisi B: Input Berisi Teks -> Tampilkan Live Preview TMDB */
+                      <>
+                        {isSearching ? (
+                          <div className="navbar__dropdown-loading">
+                            <span className="navbar__dropdown-spinner" />
+                            <span>Searching movies...</span>
+                          </div>
+                        ) : searchResults.length > 0 ? (
+                          <>
+                            <div className="navbar__dropdown-list">
+                              {searchResults.map((movie) => {
+                                const poster = getImageUrl(movie.poster_path, 'w92');
+                                const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
+                                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+
+                                return (
+                                  <button
+                                    key={movie.id}
+                                    type="button"
+                                    className="navbar__dropdown-item"
+                                    onClick={() => handleSelectMovie(movie.id)}
+                                  >
+                                    {poster ? (
+                                      <img src={poster} alt={movie.title} className="navbar__dropdown-poster" />
+                                    ) : (
+                                      <div className="navbar__dropdown-poster navbar__dropdown-poster--empty">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                          <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                                          <line x1="7" y1="7" x2="17" y2="17" />
+                                        </svg>
+                                      </div>
+                                    )}
+                                    <div className="navbar__dropdown-info">
+                                      <h4 className="navbar__dropdown-title">{movie.title}</h4>
+                                      <div className="navbar__dropdown-meta">
+                                        <span className="navbar__dropdown-year">{year}</span>
+                                        {rating && (
+                                          <span className="navbar__dropdown-rating">
+                                            ★ {rating}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <button
+                              type="button"
+                              className="navbar__dropdown-footer"
+                              onClick={handleSearchSubmit}
+                            >
+                              See all results for "{query}" &rarr;
+                            </button>
+                          </>
+                        ) : (
+                          <div className="navbar__dropdown-empty">
+                            No movies found
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
               </div>
-              )}
 
               {/* Profile / Avatar Indicator */}
               <div className="navbar__profile-wrapper" ref={profileContainerRef}>
@@ -502,46 +651,44 @@ export default function Navbar() {
 
           {/* Mobile Actions: Search Icon + Hamburger Menu */}
           <div className="navbar__mobile-actions flex items-center gap-2 md:hidden">
-            {!isSearchPage && (
-              <button
-                type="button"
-                className={`navbar__mobile-search-btn${mobileSearchOpen ? ' navbar__mobile-search-btn--active' : ''}`}
-                onClick={() => {
-                  setMobileSearchOpen((prev) => !prev);
-                  setDrawerOpen(false);
-                }}
-                aria-label={mobileSearchOpen ? 'Close search' : 'Open search'}
-                title={mobileSearchOpen ? 'Close search' : 'Search movies'}
-              >
-                {mobileSearchOpen ? (
-                  <svg
-                    className="navbar__mobile-search-btn-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                ) : (
-                  <svg
-                    className="navbar__mobile-search-btn-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                )}
-              </button>
-            )}
+            <button
+              type="button"
+              className={`navbar__mobile-search-btn${mobileSearchOpen ? ' navbar__mobile-search-btn--active' : ''}`}
+              onClick={() => {
+                setMobileSearchOpen((prev) => !prev);
+                setDrawerOpen(false);
+              }}
+              aria-label={mobileSearchOpen ? 'Close search' : 'Open search'}
+              title={mobileSearchOpen ? 'Close search' : 'Search movies'}
+            >
+              {mobileSearchOpen ? (
+                <svg
+                  className="navbar__mobile-search-btn-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg
+                  className="navbar__mobile-search-btn-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              )}
+            </button>
 
             {/* Burger button — mobile only */}
             <button
@@ -561,7 +708,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Floating Search Dropdown */}
-        {!isSearchPage && mobileSearchOpen && (
+        {mobileSearchOpen && (
           <div
             className="navbar__mobile-search-dropdown"
             ref={mobileSearchDropdownRef}
@@ -600,6 +747,9 @@ export default function Navbar() {
                     setQuery('');
                     setSearchResults([]);
                     mobileInputRef.current?.focus();
+                    if (location.pathname === '/search') {
+                      navigate('/search');
+                    }
                   }}
                   aria-label="Clear search"
                 >
@@ -616,8 +766,19 @@ export default function Navbar() {
               )}
             </form>
 
-            {/* Live Search Results inside Mobile Dropdown */}
-            {query.trim().length >= 2 && (
+            {/* Mobile Dropdown: Kondisi A (Recent Searches) & Kondisi B (Live Results) */}
+            {!query.trim() ? (
+              recentSearches.length > 0 ? (
+                <div className="navbar__mobile-search-results">
+                  <RecentSearchesList
+                    searches={recentSearches}
+                    onSelect={handleSelectRecentSearch}
+                    onRemove={handleRemoveRecentSearch}
+                    onClearAll={handleClearAllRecentSearches}
+                  />
+                </div>
+              ) : null
+            ) : query.trim().length >= 2 ? (
               <div className="navbar__mobile-search-results">
                 {isSearching ? (
                   <div className="navbar__dropdown-loading">
@@ -705,7 +866,7 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </nav>
