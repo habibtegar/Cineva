@@ -105,9 +105,15 @@ export const getMoviesByGenre = (genreId, page = 1) =>
   });
 
 /** Person details & credits */
+export const getPopularActors = (page = 1) =>
+  fetchFromTMDB('/person/popular', { page });
+
+export const getPopularPersons = getPopularActors;
+
 export const getPersonDetail = (id) =>
   fetchFromTMDB(`/person/${id}`);
 
 export const getPersonMovieCredits = (id) =>
   fetchFromTMDB(`/person/${id}/movie_credits`);
+
 

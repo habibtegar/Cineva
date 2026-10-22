@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import MovieDetail from './pages/MovieDetail';
 import PersonDetail from './pages/PersonDetail';
+import Actors from './pages/Actors';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
@@ -153,6 +154,16 @@ export default function App() {
               />
             }
           />
+          <Route
+            path="/actor/:id"
+            element={
+              <PersonDetail
+                toggleFavorite={toggleFavorite}
+                isFavorite={isFavorite}
+              />
+            }
+          />
+          <Route path="/actors" element={<Actors />} />
           <Route
             path="/favorites"
             element={
