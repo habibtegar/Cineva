@@ -9,7 +9,8 @@ import {
   updateProfile,
   sendEmailVerification,
 } from 'firebase/auth';
-import { auth, googleProvider, isFirebaseConfigured } from '../services/firebase';
+import { auth, googleProvider, isFirebaseConfigured, db } from '../services/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { AuthContext } from './AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrors';
 import { isDisposableEmail } from '../utils/disposableEmail';
@@ -44,6 +45,25 @@ export function AuthProvider({ children }) {
             lastSignInTime: currentUser.metadata?.lastSignInTime,
           },
         });
+
+        // Sync profil pengguna ke Firestore agar profil publik dapat dibaca pengguna lain
+        if (db) {
+          try {
+            setDoc(
+              doc(db, 'users', currentUser.uid),
+              {
+                displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+                photoURL: currentUser.photoURL || '',
+                email: currentUser.email || '',
+                emailVerified: Boolean(currentUser.emailVerified),
+                createdAt: currentUser.metadata?.creationTime || serverTimestamp(),
+              },
+              { merge: true }
+            ).catch(() => {});
+          } catch {
+            // Abaikan kesalahan sinkronisasi latar belakang
+          }
+        }
       } else {
         setUser(null);
       }
@@ -195,6 +215,21 @@ export function AuthProvider({ children }) {
         lastSignInTime: current.metadata?.lastSignInTime,
       },
     });
+
+    if (db && current) {
+      try {
+        await setDoc(
+          doc(db, 'users', current.uid),
+          {
+            displayName: displayName?.trim() || current.displayName || 'User',
+            photoURL: photoURL ? photoURL.trim() : (current.photoURL || ''),
+          },
+          { merge: true }
+        );
+      } catch (docErr) {
+        console.warn('Failed to update user doc in Firestore:', docErr);
+      }
+    }
   };
 
   const logout = async () => {

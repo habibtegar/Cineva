@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import CastCard from '../components/CastCard';
 import MovieGrid from '../components/MovieGrid';
 import TrailerModal from '../components/TrailerModal';
@@ -80,36 +80,79 @@ function CommunityReviewItem({ review, currentUserId, onDelete, isDeleting }) {
     <div className="detail__review-card relative">
       <div className="detail__review-header">
         <div className="detail__review-author-info">
-          {review.userPhoto && !avatarError ? (
-            <img
-              src={review.userPhoto}
-              alt={review.userName}
-              className="detail__review-avatar"
-              onError={() => setAvatarError(true)}
-            />
-          ) : (
-            <div
-              className="detail__review-avatar detail__review-avatar--placeholder"
-              style={{
-                color: '#ef4444',
-                background: 'rgba(239, 68, 68, 0.12)',
-                borderColor: 'rgba(239, 68, 68, 0.25)',
-              }}
+          {review.userId ? (
+            <Link
+              to={`/user/${review.userId}`}
+              className="flex items-center gap-3 group cursor-pointer text-inherit no-underline"
+              title={`View ${review.userName || 'User'}'s profile`}
             >
-              {initial}
+              {review.userPhoto && !avatarError ? (
+                <img
+                  src={review.userPhoto}
+                  alt={review.userName}
+                  className="detail__review-avatar transition-transform duration-200 group-hover:scale-105 group-hover:border-red-500/50"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div
+                  className="detail__review-avatar detail__review-avatar--placeholder transition-transform duration-200 group-hover:scale-105"
+                  style={{
+                    color: '#ef4444',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    borderColor: 'rgba(239, 68, 68, 0.25)',
+                  }}
+                >
+                  {initial}
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="detail__review-author transition-colors group-hover:text-red-400">
+                    {review.userName || 'Anonymous'}
+                  </h4>
+                  {isOwner && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30">
+                      You
+                    </span>
+                  )}
+                </div>
+                <span className="detail__review-date">{formatCommunityDate(review.createdAt)}</span>
+              </div>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-3">
+              {review.userPhoto && !avatarError ? (
+                <img
+                  src={review.userPhoto}
+                  alt={review.userName}
+                  className="detail__review-avatar"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div
+                  className="detail__review-avatar detail__review-avatar--placeholder"
+                  style={{
+                    color: '#ef4444',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    borderColor: 'rgba(239, 68, 68, 0.25)',
+                  }}
+                >
+                  {initial}
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="detail__review-author">{review.userName || 'Anonymous'}</h4>
+                  {isOwner && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30">
+                      You
+                    </span>
+                  )}
+                </div>
+                <span className="detail__review-date">{formatCommunityDate(review.createdAt)}</span>
+              </div>
             </div>
           )}
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="detail__review-author">{review.userName || 'Anonymous'}</h4>
-              {isOwner && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30">
-                  You
-                </span>
-              )}
-            </div>
-            <span className="detail__review-date">{formatCommunityDate(review.createdAt)}</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-2">

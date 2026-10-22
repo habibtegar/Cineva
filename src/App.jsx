@@ -12,6 +12,7 @@ import PersonDetail from './pages/PersonDetail';
 import Actors from './pages/Actors';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
+import PublicProfile from './pages/PublicProfile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { useFavorites } from './hooks/useFavorites';
@@ -183,6 +184,15 @@ export default function App() {
                 toggleFavorite={toggleFavorite}
                 isFavorite={isFavorite}
                 loading={loading}
+              />
+            }
+          />
+          <Route
+            path="/user/:userId"
+            element={
+              <PublicProfile
+                toggleFavorite={toggleFavorite}
+                isFavorite={isFavorite}
               />
             }
           />
