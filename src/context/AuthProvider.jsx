@@ -10,7 +10,16 @@ import {
   sendEmailVerification,
 } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured, db } from '../services/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch,
+} from 'firebase/firestore';
 import { AuthContext } from './AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrors';
 import { isDisposableEmail } from '../utils/disposableEmail';
@@ -194,9 +203,12 @@ export function AuthProvider({ children }) {
     if (!auth.currentUser) {
       throw new Error('Pengguna tidak terautentikasi.');
     }
+    const trimmedName = displayName?.trim() || null;
+    const trimmedPhoto = photoURL ? photoURL.trim() : null;
+
     await updateProfile(auth.currentUser, {
-      displayName: displayName?.trim() || null,
-      photoURL: photoURL ? photoURL.trim() : null,
+      displayName: trimmedName,
+      photoURL: trimmedPhoto,
     });
     try {
       await auth.currentUser.reload();
@@ -204,11 +216,14 @@ export function AuthProvider({ children }) {
       console.warn('Peringatan reload currentUser:', reloadErr);
     }
     const current = auth.currentUser;
+    const finalDisplayName = trimmedName || current.displayName || 'User';
+    const finalPhotoURL = current.photoURL || '';
+
     setUser({
       uid: current.uid,
-      displayName: displayName?.trim() || current.displayName || 'User',
+      displayName: finalDisplayName,
       email: current.email || '',
-      photoURL: current.photoURL || '',
+      photoURL: finalPhotoURL,
       emailVerified: current.emailVerified,
       metadata: {
         creationTime: current.metadata?.creationTime,
@@ -217,17 +232,44 @@ export function AuthProvider({ children }) {
     });
 
     if (db && current) {
+      // 1. Simpan ke koleksi profil pengguna users/{uid}
       try {
         await setDoc(
           doc(db, 'users', current.uid),
           {
-            displayName: displayName?.trim() || current.displayName || 'User',
-            photoURL: photoURL ? photoURL.trim() : (current.photoURL || ''),
+            displayName: finalDisplayName,
+            photoURL: finalPhotoURL,
           },
           { merge: true }
         );
       } catch (docErr) {
         console.warn('Failed to update user doc in Firestore:', docErr);
+      }
+
+      // 2. Operasi Firestore Batch Update: cari semua ulasan di koleksi movie_reviews
+      // dengan where('userId', '==', auth.currentUser.uid) dan perbarui userName serta userPhoto
+      try {
+        const reviewsRef = collection(db, 'movie_reviews');
+        const q = query(reviewsRef, where('userId', '==', current.uid));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const docs = querySnapshot.docs;
+          const batchSize = 500;
+          for (let i = 0; i < docs.length; i += batchSize) {
+            const chunk = docs.slice(i, i + batchSize);
+            const batch = writeBatch(db);
+            chunk.forEach((reviewDoc) => {
+              batch.update(reviewDoc.ref, {
+                userName: finalDisplayName,
+                userPhoto: finalPhotoURL,
+              });
+            });
+            await batch.commit();
+          }
+        }
+      } catch (batchErr) {
+        console.error('Failed to batch update user reviews on profile edit:', batchErr);
       }
     }
   };

@@ -69,12 +69,33 @@ function getLanguageName(code) {
 function CommunityReviewItem({ review, currentUserId, onDelete, isDeleting }) {
   const [expanded, setExpanded] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
-  const isOwner = (currentUserId && review.userId === currentUserId) ||
-                  (auth.currentUser && review.userId === auth.currentUser.uid);
+
+  // Periksa apakah ulasan milik pengguna yang sedang login
+  const currentUser = auth.currentUser;
+  const isCurrentUser = Boolean(
+    currentUser && review.userId && review.userId === currentUser.uid
+  );
+  const isOwner = Boolean(
+    isCurrentUser || (currentUserId && review.userId === currentUserId)
+  );
+
+  // Jika ulasan milik sendiri, utamakan menggunakan auth.currentUser.displayName & photoURL terbaru
+  const authorName = isCurrentUser
+    ? (currentUser.displayName || review.userName || 'Anonymous')
+    : (review.userName || 'Anonymous');
+
+  const authorPhoto = isCurrentUser
+    ? (currentUser.photoURL !== undefined ? currentUser.photoURL : review.userPhoto)
+    : review.userPhoto;
+
   const content = review.comment || '';
   const isLong = content.length > 320;
   const displayContent = isLong && !expanded ? `${content.slice(0, 320)}...` : content;
-  const initial = (review.userName || 'U').charAt(0).toUpperCase();
+  const initial = (authorName || 'U').charAt(0).toUpperCase();
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [authorPhoto]);
 
   return (
     <div className="detail__review-card relative">
@@ -84,12 +105,12 @@ function CommunityReviewItem({ review, currentUserId, onDelete, isDeleting }) {
             <Link
               to={`/user/${review.userId}`}
               className="flex items-center gap-3 group cursor-pointer text-inherit no-underline"
-              title={`View ${review.userName || 'User'}'s profile`}
+              title={`View ${authorName}'s profile`}
             >
-              {review.userPhoto && !avatarError ? (
+              {authorPhoto && !avatarError ? (
                 <img
-                  src={review.userPhoto}
-                  alt={review.userName}
+                  src={authorPhoto}
+                  alt={authorName}
                   className="detail__review-avatar transition-transform duration-200 group-hover:scale-105 group-hover:border-red-500/50"
                   onError={() => setAvatarError(true)}
                 />
@@ -108,7 +129,7 @@ function CommunityReviewItem({ review, currentUserId, onDelete, isDeleting }) {
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="detail__review-author transition-colors group-hover:text-red-400">
-                    {review.userName || 'Anonymous'}
+                    {authorName}
                   </h4>
                   {isOwner && (
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30">
@@ -121,10 +142,10 @@ function CommunityReviewItem({ review, currentUserId, onDelete, isDeleting }) {
             </Link>
           ) : (
             <div className="flex items-center gap-3">
-              {review.userPhoto && !avatarError ? (
+              {authorPhoto && !avatarError ? (
                 <img
-                  src={review.userPhoto}
-                  alt={review.userName}
+                  src={authorPhoto}
+                  alt={authorName}
                   className="detail__review-avatar"
                   onError={() => setAvatarError(true)}
                 />
@@ -142,7 +163,7 @@ function CommunityReviewItem({ review, currentUserId, onDelete, isDeleting }) {
               )}
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="detail__review-author">{review.userName || 'Anonymous'}</h4>
+                  <h4 className="detail__review-author">{authorName}</h4>
                   {isOwner && (
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30">
                       You
