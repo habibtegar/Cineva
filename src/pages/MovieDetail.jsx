@@ -21,28 +21,6 @@ import {
 import toast from 'react-hot-toast';
 import './MovieDetail.css';
 
-// Avatar helper for reviews
-function getAvatarUrl(path) {
-  if (!path) return null;
-  if (path.startsWith('/http')) return path.slice(1);
-  if (path.startsWith('http')) return path;
-  return `https://image.tmdb.org/t/p/w185${path}`;
-}
-
-// Format review date in English (e.g. Oct 14, 2026)
-function formatReviewDate(dateStr) {
-  if (!dateStr) return '';
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  } catch {
-    return dateStr.slice(0, 10);
-  }
-}
-
 // Format Firestore timestamp to English date (e.g. Oct 22, 2026)
 function formatCommunityDate(createdAt) {
   if (!createdAt) return 'Just now';
@@ -224,8 +202,8 @@ function ReviewForm({ movieId, user }) {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">Have you watched this movie?</p>
-            <p className="text-xs text-zinc-400 mt-0.5">Please sign in to rate and review this movie.</p>
+            <p className="text-sm font-semibold text-white">Please sign in to write a review</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Share your rating and thoughts about this movie with the community.</p>
           </div>
         </div>
         <button
@@ -353,57 +331,6 @@ function ReviewForm({ movieId, user }) {
   );
 }
 
-// Review card subcomponent with Read More toggle (TMDB)
-function ReviewItem({ review }) {
-  const [expanded, setExpanded] = useState(false);
-  const authorName = review.author_details?.name || review.author || 'Anonymous';
-  const rating = review.author_details?.rating;
-  const avatar = getAvatarUrl(review.author_details?.avatar_path);
-  const content = review.content || '';
-  const isLong = content.length > 320;
-  const displayContent = isLong && !expanded ? `${content.slice(0, 320)}...` : content;
-
-  return (
-    <div className="detail__review-card">
-      <div className="detail__review-header">
-        <div className="detail__review-author-info">
-          {avatar ? (
-            <img src={avatar} alt={authorName} className="detail__review-avatar" />
-          ) : (
-            <div className="detail__review-avatar detail__review-avatar--placeholder">
-              {authorName.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div>
-            <h4 className="detail__review-author">{authorName}</h4>
-            <span className="detail__review-date">{formatReviewDate(review.created_at)}</span>
-          </div>
-        </div>
-
-        {rating && (
-          <div className="detail__review-rating">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-            </svg>
-            <span>{rating} / 10</span>
-          </div>
-        )}
-      </div>
-
-      <p className="detail__review-content break-words">{displayContent}</p>
-
-      {isLong && (
-        <button
-          type="button"
-          className="detail__review-readmore"
-          onClick={() => setExpanded((prev) => !prev)}
-        >
-          {expanded ? 'Show Less' : 'Read More'}
-        </button>
-      )}
-    </div>
-  );
-}
 
 export default function MovieDetail({ toggleFavorite, isFavorite }) {
   const { id } = useParams();
@@ -575,7 +502,6 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
   const genres = movie.genres ? movie.genres.map((g) => g.name) : [];
   const cast = movie.credits?.cast?.slice(0, 14) || [];
   const similar = movie.similar?.results?.slice(0, 6) || [];
-  const reviews = movie.reviews?.results || [];
 
   const director = movie.credits?.crew?.find((c) => c.job === 'Director')?.name;
   const writer = movie.credits?.crew?.find(
@@ -757,85 +683,69 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
           </section>
         )}
 
-        {/* Reviews Section (Community + TMDB) */}
-        <section className="detail__reviews">
-          <h2 className="detail__section-title mb-5">
-            Reviews{' '}
-            {(communityReviews.length + reviews.length) > 0 && (
-              <span className="detail__reviews-count">
-                ({communityReviews.length + reviews.length})
+        {/* Reviews Section (Community Firestore Reviews) */}
+        <section className="detail__reviews mb-14 md:mb-16">
+          <h2 className="detail__section-title mb-5 flex items-center gap-2">
+            <span>Reviews</span>
+            {communityReviews.length > 0 && (
+              <span className="text-xs font-semibold text-zinc-400 bg-zinc-800/80 px-2.5 py-0.5 rounded-full border border-zinc-700/60">
+                {communityReviews.length}
               </span>
             )}
           </h2>
 
-          {/* Form Tambah Ulasan (Write a Review) */}
+          {/* Form Tambah Ulasan (Write a Review) di bagian paling atas */}
           <ReviewForm movieId={id} user={user} />
 
-          {/* 1. Community Reviews (Firestore) */}
-          <div className="mb-8">
-            <div className="detail__reviews-subheading">
-              <span className="detail__reviews-subheading-dot bg-red-500" />
-              <span>Community Reviews</span>
-              <span className="text-xs font-semibold text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded-full border border-zinc-700/60">
-                {communityReviews.length}
-              </span>
-            </div>
-
-            {communityLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 2 }).map((_, idx) => (
-                  <div key={idx} className="detail__review-card animate-pulse">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-zinc-800" />
-                      <div className="space-y-1.5 flex-1">
-                        <div className="w-28 h-3.5 bg-zinc-800 rounded" />
-                        <div className="w-20 h-2.5 bg-zinc-800/60 rounded" />
-                      </div>
+          {/* Daftar Ulasan Komunitas (Firestore) */}
+          {communityLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, idx) => (
+                <div key={idx} className="detail__review-card animate-pulse">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-zinc-800" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="w-28 h-3.5 bg-zinc-800 rounded" />
+                      <div className="w-20 h-2.5 bg-zinc-800/60 rounded" />
                     </div>
-                    <div className="w-full h-3 bg-zinc-800/60 rounded mb-2" />
-                    <div className="w-3/4 h-3 bg-zinc-800/40 rounded" />
                   </div>
-                ))}
-              </div>
-            ) : communityReviews.length > 0 ? (
-              <div className="detail__reviews-list space-y-4">
-                {communityReviews.map((rev) => (
-                  <CommunityReviewItem
-                    key={rev.id}
-                    review={rev}
-                    currentUserId={user?.uid}
-                    onDelete={handleDeleteCommunityReview}
-                    isDeleting={deletingId === rev.id}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="detail__no-reviews">
-                <p>No community reviews yet. Be the first to share your review above!</p>
-              </div>
-            )}
-          </div>
-
-          {/* 2. External Critic Reviews (TMDB) */}
-          <div>
-            <div className="detail__reviews-subheading">
-              <span className="detail__reviews-subheading-dot bg-amber-500" />
-              <span>External Critic Reviews</span>
-              <span className="text-xs font-semibold text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded-full border border-zinc-700/60">
-                {reviews.length}
-              </span>
+                  <div className="w-full h-3 bg-zinc-800/60 rounded mb-2" />
+                  <div className="w-3/4 h-3 bg-zinc-800/40 rounded" />
+                </div>
+              ))}
             </div>
-
-            {reviews.length > 0 ? (
-              <div className="detail__reviews-list space-y-4">
-                {reviews.map((rev) => (
-                  <ReviewItem key={rev.id} review={rev} />
-                ))}
+          ) : communityReviews.length > 0 ? (
+            <div className="detail__reviews-list space-y-4">
+              {communityReviews.map((rev) => (
+                <CommunityReviewItem
+                  key={rev.id}
+                  review={rev}
+                  currentUserId={user?.uid}
+                  onDelete={handleDeleteCommunityReview}
+                  isDeleting={deletingId === rev.id}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl py-10 px-6 flex flex-col items-center justify-center text-center">
+              <div className="w-14 h-14 rounded-full bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center text-zinc-500 mb-3 shadow-inner">
+                <svg
+                  className="w-7 h-7 text-zinc-500"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
               </div>
-            ) : (
-              <p className="text-zinc-500 text-sm py-2">No external reviews available from TMDB.</p>
-            )}
-          </div>
+              <p className="text-sm text-zinc-400 max-w-sm">
+                No reviews yet. Be the first to share your thoughts about this movie!
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Similar Movies */}

@@ -44,7 +44,7 @@ export const getNowPlaying = (page = 1) =>
 
 /** Movie detail */
 export const getMovieDetail = (id) =>
-  fetchFromTMDB(`/movie/${id}`, { append_to_response: 'credits,videos,similar,reviews' });
+  fetchFromTMDB(`/movie/${id}`, { append_to_response: 'credits,videos,similar' });
 
 /** Movie reviews */
 export const getMovieReviews = (id, page = 1) =>
