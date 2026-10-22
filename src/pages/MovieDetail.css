@@ -572,10 +572,10 @@
 
 /* Fallback: No Reviews */
 .detail__no-reviews {
-  padding: 40px 20px;
+  padding: 30px 20px;
   text-align: center;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.07);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -594,6 +594,156 @@
   font-size: 0.88rem;
   margin: 0;
 }
+
+/* =============================================
+   Firestore Community Reviews & Review Form
+   ============================================= */
+.detail__review-form {
+  background: rgba(24, 24, 27, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.detail__review-form-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail__review-stars {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.detail__star-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #52525b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.detail__star-btn:hover {
+  transform: scale(1.2);
+}
+
+.detail__star-btn--active {
+  color: #fbbf24;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.45));
+}
+
+.detail__star-rating-label {
+  margin-left: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+.detail__review-textarea {
+  width: 100%;
+  background: rgba(10, 10, 12, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  color: #ffffff;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 96px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.detail__review-textarea:focus {
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.detail__review-textarea::placeholder {
+  color: #71717a;
+}
+
+.detail__review-submit-btn {
+  padding: 9px 20px;
+  background-color: #e50914;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.35);
+}
+
+.detail__review-submit-btn:hover:not(:disabled) {
+  background-color: #f40612;
+  transform: translateY(-1px);
+}
+
+.detail__review-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.detail__review-delete-btn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.detail__review-delete-btn:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.detail__reviews-subheading {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #e4e4e7;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail__reviews-subheading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
 
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
