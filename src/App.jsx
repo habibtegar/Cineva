@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import PublicProfile from './pages/PublicProfile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Feedback from './pages/Feedback';
 import { useFavorites } from './hooks/useFavorites';
 
 export default function App() {
@@ -196,6 +197,7 @@ export default function App() {
               />
             }
           />
+          <Route path="/feedback" element={<Feedback />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>

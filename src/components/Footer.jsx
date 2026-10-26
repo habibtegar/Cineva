@@ -32,6 +32,27 @@ export default function Footer() {
           </p>
         </div>
 
+        {/* Navigation / Community Links */}
+        <div className="footer__nav flex items-center gap-6 text-sm">
+          <Link
+            to="/feedback"
+            className="footer__link text-gray-400 hover:text-white transition-colors inline-flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-zinc-800/60"
+          >
+            <svg
+              className="w-4 h-4 text-red-500"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <span>Feedback & Requests</span>
+          </Link>
+        </div>
+
         {/* Social / External Links */}
         <div className="footer__socials flex items-center gap-4">
           <a
