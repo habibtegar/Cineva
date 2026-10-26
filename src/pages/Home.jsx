@@ -59,6 +59,8 @@ export default function Home({ toggleFavorite, isFavorite }) {
   // Hero Banner State
   const [hero, setHero] = useState(null);
   const [heroLoading, setHeroLoading] = useState(true);
+  const [heroError, setHeroError] = useState(null);
+  const [heroRetryKey, setHeroRetryKey] = useState(0);
   const [heroTrailerKey, setHeroTrailerKey] = useState(null);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [genres, setGenres] = useState([]);
@@ -76,29 +78,64 @@ export default function Home({ toggleFavorite, isFavorite }) {
     window.scrollTo(0, 0);
   }, []);
 
-  // Fetch official TMDB genre list on mount
+  // Fetch official TMDB genre list on mount dengan structured try...catch
   useEffect(() => {
-    getGenres()
-      .then((data) => setGenres(data.genres || []))
-      .catch((err) => console.error('Failed to fetch genres in Home:', err));
+    let isCancelled = false;
+
+    async function fetchGenres() {
+      try {
+        const data = await getGenres();
+        if (!isCancelled) {
+          setGenres(data?.genres || []);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error('Failed to fetch genres in Home:', err);
+        }
+      }
+    }
+
+    fetchGenres();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
-  // Fetch trending movies for Hero Banner
+  // Fetch trending movies for Hero Banner dengan structured try...catch & fallback state
   useEffect(() => {
     let isCancelled = false;
 
     async function initHeroBanner() {
       try {
         setHeroLoading(true);
+        setHeroError(null);
         const data = await getTrending('week', 1);
-        if (!isCancelled && data.results && data.results.length > 0) {
-          // Select a random movie from top 10 trending for the hero
-          const pool = data.results.slice(0, 10);
-          const randomIndex = Math.floor(Math.random() * pool.length);
-          setHero(pool[randomIndex]);
+        if (!isCancelled) {
+          if (data?.results && data.results.length > 0) {
+            // Select a random movie from top 10 trending for the hero
+            const pool = data.results.slice(0, 10);
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            setHero(pool[randomIndex]);
+          } else {
+            setHero(null);
+            setHeroError('No trending movies available.');
+          }
         }
       } catch (err) {
-        console.error('Failed to load hero movie:', err);
+        if (!isCancelled) {
+          console.error('Failed to load hero movie:', err);
+          const isApiKeyIssue =
+            !import.meta.env.VITE_TMDB_API_KEY ||
+            err?.message?.includes('TMDB API key') ||
+            err?.response?.status === 401;
+
+          setHeroError(
+            isApiKeyIssue
+              ? 'TMDB API key is missing or invalid. Please set VITE_TMDB_API_KEY in Vercel Environment Variables.'
+              : 'Failed to load featured movie. Please check your network connection.'
+          );
+        }
       } finally {
         if (!isCancelled) {
           setHeroLoading(false);
@@ -111,17 +148,32 @@ export default function Home({ toggleFavorite, isFavorite }) {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [heroRetryKey]);
 
   // Fetch hero trailer key once hero is set
   useEffect(() => {
     if (!hero?.id) return;
-    getMovieDetail(hero.id)
-      .then((detail) => {
-        const trailer = getTrailerVideo(detail.videos?.results);
-        setHeroTrailerKey(trailer?.key || null);
-      })
-      .catch(() => {});
+    let isCancelled = false;
+
+    async function fetchTrailer() {
+      try {
+        const detail = await getMovieDetail(hero.id);
+        if (!isCancelled) {
+          const trailer = getTrailerVideo(detail?.videos?.results);
+          setHeroTrailerKey(trailer?.key || null);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.warn('Failed to fetch hero trailer:', err);
+        }
+      }
+    }
+
+    fetchTrailer();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [hero]);
 
   // Real-time listener untuk 3 feedback teratas berdasarkan jumlah upvotes
@@ -231,12 +283,41 @@ export default function Home({ toggleFavorite, isFavorite }) {
       {/* 1. Hero Banner */}
       {heroLoading ? (
         <SkeletonHero />
-      ) : (
+      ) : hero ? (
         <HeroSection
           movie={hero}
           genres={genres}
           onWatchTrailer={heroTrailerKey ? () => setTrailerOpen(true) : undefined}
         />
+      ) : (
+        <div className="w-full pt-28 pb-10 px-4 flex justify-center">
+          <div className="max-w-xl w-full bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 text-center flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-white">Featured Movie Unavailable</h2>
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-md">
+              {heroError || 'Unable to connect to TMDB movie service.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setHeroRetryKey((prev) => prev + 1)}
+              className="mt-2 px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-95 text-white rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 21h5v-5" />
+              </svg>
+              <span>Retry</span>
+            </button>
+          </div>
+        </div>
       )}
 
       <div className="page-container">

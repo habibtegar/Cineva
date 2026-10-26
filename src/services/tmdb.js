@@ -1,8 +1,69 @@
 import axios from 'axios';
 
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+// Format pengambilan variabel environment Vite
+const RAW_API_KEY =
+  import.meta.env.VITE_TMDB_API_KEY ||
+  import.meta.env.VITE_TMDB_ACCESS_TOKEN ||
+  import.meta.env.VITE_TMDB_READ_ACCESS_TOKEN ||
+  '';
+
+const API_KEY = typeof RAW_API_KEY === 'string' ? RAW_API_KEY.trim().replace(/^["']|["']$/g, '') : '';
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
+
+// Pengecekan defensif jika API key belum dikonfigurasi
+if (!API_KEY) {
+  console.warn(
+    'TMDB API key is missing. Please set VITE_TMDB_API_KEY in Vercel Environment Variables.'
+  );
+  console.error(
+    'TMDB API key is missing. Please set VITE_TMDB_API_KEY in Vercel Environment Variables.'
+  );
+}
+
+// Cek tipe kredensial TMDB: v4 Bearer Read Access Token (JWT) vs v3 API Key (32 hex characters)
+const isBearerToken = Boolean(
+  API_KEY && (API_KEY.startsWith('ey') || API_KEY.startsWith('Bearer ') || API_KEY.length > 50)
+);
+
+const cleanBearerToken = API_KEY.startsWith('Bearer ')
+  ? API_KEY.slice(7).trim()
+  : API_KEY;
+
+/** Axios instance dengan interceptor autentikasi terpusat */
+export const tmdbClient = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json;charset=utf-8',
+  },
+});
+
+// Interceptor untuk menyematkan autentikasi yang tepat secara otomatis
+tmdbClient.interceptors.request.use((config) => {
+  if (!API_KEY) {
+    console.warn(
+      'TMDB API key is missing. Please set VITE_TMDB_API_KEY in Vercel Environment Variables.'
+    );
+    console.error(
+      'TMDB API key is missing. Please set VITE_TMDB_API_KEY in Vercel Environment Variables.'
+    );
+    return Promise.reject(
+      new Error('TMDB API key is missing. Please set VITE_TMDB_API_KEY in Vercel Environment Variables.')
+    );
+  }
+
+  // Gunakan Bearer Token jika JWT (v4) atau Query Parameter ?api_key= jika v3 API Key
+  if (isBearerToken) {
+    config.headers.Authorization = `Bearer ${cleanBearerToken}`;
+  } else {
+    config.params = {
+      api_key: API_KEY,
+      ...config.params,
+    };
+  }
+
+  return config;
+});
 
 /** Image URL helpers */
 export const getImageUrl = (path, size = 'w500') => {
@@ -17,9 +78,7 @@ export const getBackdropUrl = (path, size = 'w1280') => {
 
 /** Generic fetch helper */
 const fetchFromTMDB = async (endpoint, params = {}) => {
-  const response = await axios.get(`${BASE_URL}${endpoint}`, {
-    params: { api_key: API_KEY, ...params },
-  });
+  const response = await tmdbClient.get(endpoint, { params });
   return response.data;
 };
 
@@ -118,10 +177,7 @@ export const getPersonMovieCredits = (id) =>
 
 /** Fetch custom TMDB endpoint or relative URL for MovieRow */
 export const fetchCustomUrl = async (endpoint, params = {}) => {
-  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
-  const response = await axios.get(url, {
-    params: { api_key: API_KEY, ...params },
-  });
+  const response = await tmdbClient.get(endpoint, { params });
   return response.data;
 };
 
@@ -152,5 +208,8 @@ export const discoverTV = (params = {}) =>
     sort_by: 'popularity.desc',
     ...params,
   });
+
+export default tmdbClient;
+
 
 

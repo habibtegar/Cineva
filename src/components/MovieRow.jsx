@@ -15,6 +15,7 @@ export default function MovieRow({
   const [error, setError] = useState(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [retryKey, setRetryKey] = useState(0);
 
   const scrollContainerRef = useRef(null);
   const navigate = useNavigate();
@@ -27,33 +28,45 @@ export default function MovieRow({
     let isCancelled = false;
 
     async function fetchRowMovies() {
+      if (!fetchUrl) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
         const data = await fetchCustomUrl(fetchUrl);
         if (!isCancelled) {
           // Ambil daftar film (TMDB results)
-          const results = data.results || [];
+          const results = data?.results || [];
           setMovies(results);
           setLoading(false);
         }
       } catch (err) {
         if (!isCancelled) {
-          console.error(`Error fetching movies for ${title}:`, err);
-          setError('Failed to load movies.');
+          console.error(`Error fetching movies for "${title}":`, err);
+          const isApiKeyIssue =
+            !import.meta.env.VITE_TMDB_API_KEY ||
+            err?.message?.includes('TMDB API key') ||
+            err?.response?.status === 401;
+
+          const errorMsg = isApiKeyIssue
+            ? 'TMDB API key is missing or invalid. Please set VITE_TMDB_API_KEY in Vercel Environment Variables.'
+            : 'Failed to load movies. Please check your connection.';
+
+          setError(errorMsg);
           setLoading(false);
         }
       }
     }
 
-    if (fetchUrl) {
-      fetchRowMovies();
-    }
+    fetchRowMovies();
 
     return () => {
       isCancelled = true;
     };
-  }, [fetchUrl, title]);
+  }, [fetchUrl, title, retryKey]);
 
   // Cek posisi scroll untuk menampilkan/menyembunyikan panah navigasi
   const checkScrollPosition = useCallback(() => {
@@ -169,8 +182,28 @@ export default function MovieRow({
               </div>
             ))
           ) : error ? (
-            <div className="py-6 px-4 text-xs text-zinc-500 bg-zinc-900/40 rounded-xl w-full text-center border border-zinc-800/60">
-              {error}
+            <div className="w-full py-8 px-4 text-center bg-zinc-900/40 rounded-xl border border-zinc-800/60 flex flex-col items-center justify-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <p className="text-xs sm:text-sm text-zinc-300 font-medium max-w-md">{error}</p>
+              <button
+                type="button"
+                onClick={() => setRetryKey((prev) => prev + 1)}
+                className="mt-1 px-3 py-1.5 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-zinc-200 rounded-lg transition-all border border-zinc-700/60 flex items-center gap-1.5 cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                  <path d="M16 21h5v-5" />
+                </svg>
+                <span>Try Again</span>
+              </button>
             </div>
           ) : movies.length === 0 ? (
             <div className="py-6 px-4 text-xs text-zinc-500 bg-zinc-900/40 rounded-xl w-full text-center border border-zinc-800/60">
