@@ -125,4 +125,32 @@ export const fetchCustomUrl = async (endpoint, params = {}) => {
   return response.data;
 };
 
+/** TV Shows API Endpoints */
+export const getTVPopular = (page = 1) =>
+  fetchFromTMDB('/tv/popular', { page });
+
+export const getTVTopRated = (page = 1) =>
+  fetchFromTMDB('/tv/top_rated', { page });
+
+export const getTVAiringToday = (page = 1) =>
+  fetchFromTMDB('/tv/airing_today', { page });
+
+export const getTVGenres = () =>
+  fetchFromTMDB('/genre/tv/list');
+
+export const getTVDetail = (id) =>
+  fetchFromTMDB(`/tv/${id}`, { append_to_response: 'credits,videos,recommendations,similar' });
+
+export const getTVVideos = (id) =>
+  fetchFromTMDB(`/tv/${id}/videos`);
+
+export const getTVRecommendations = (id, page = 1) =>
+  fetchFromTMDB(`/tv/${id}/recommendations`, { page });
+
+export const discoverTV = (params = {}) =>
+  fetchFromTMDB('/discover/tv', {
+    sort_by: 'popularity.desc',
+    ...params,
+  });
+
 

@@ -1,0 +1,38 @@
+/* =============================================
+   TVDetail Component Styles — Cineva
+   ============================================= */
+
+@import './MovieDetail.css';
+
+/* TV-specific seasons and episodes badge */
+.tv-detail__seasons-badge {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-weight: 600;
+}
+
+/* TV Recommendations Grid */
+.tv-recommendations__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .tv-recommendations__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .tv-recommendations__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tv-recommendations__grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}

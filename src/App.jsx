@@ -10,7 +10,8 @@ import Explore from './pages/Explore';
 import Search from './pages/Search';
 import MovieDetail from './pages/MovieDetail';
 import PersonDetail from './pages/PersonDetail';
-import Actors from './pages/Actors';
+import TVShows from './pages/TVShows';
+import TVDetail from './pages/TVDetail';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
 import PublicProfile from './pages/PublicProfile';
@@ -172,7 +173,24 @@ export default function App() {
               />
             }
           />
-          <Route path="/actors" element={<Actors />} />
+          <Route
+            path="/tv"
+            element={
+              <TVShows
+                toggleFavorite={toggleFavorite}
+                isFavorite={isFavorite}
+              />
+            }
+          />
+          <Route
+            path="/tv/:id"
+            element={
+              <TVDetail
+                toggleFavorite={toggleFavorite}
+                isFavorite={isFavorite}
+              />
+            }
+          />
           <Route
             path="/favorites"
             element={
