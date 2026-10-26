@@ -12,6 +12,7 @@ import {
 import { db } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
 import HeroSection from '../components/HeroSection';
+import MovieRow from '../components/MovieRow';
 import MovieGrid from '../components/MovieGrid';
 import MovieCardSkeleton from '../components/MovieCardSkeleton';
 import TrailerModal from '../components/TrailerModal';
@@ -328,6 +329,45 @@ export default function Home({ toggleFavorite, isFavorite }) {
       )}
 
       <div className="page-container">
+        {/* =============================================
+            Horizontal Movie Carousels (Netflix Style)
+            ============================================= */}
+        <div className="home__movie-rows mb-12">
+          <MovieRow
+            fetchUrl="/trending/movie/week"
+            title="🔥 Trending This Week"
+            onToggleFavorite={toggleFavorite}
+            isFavorite={isFavorite}
+          />
+          <MovieRow
+            fetchUrl="/movie/top_rated"
+            title="⭐ Top Rated Classics"
+            onToggleFavorite={toggleFavorite}
+            isFavorite={isFavorite}
+          />
+          <MovieRow
+            fetchUrl="/discover/movie?with_genres=28&sort_by=popularity.desc"
+            title="💥 Action Blockbusters"
+            onToggleFavorite={toggleFavorite}
+            isFavorite={isFavorite}
+          />
+          <MovieRow
+            fetchUrl="/movie/upcoming"
+            title="🚀 Upcoming in Theaters"
+            onToggleFavorite={toggleFavorite}
+            isFavorite={isFavorite}
+          />
+        </div>
+
+        {/* =============================================
+            Explore Full Catalog & Filter by Genre
+            ============================================= */}
+        <div className="pt-6 border-t border-zinc-800/80 mb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2 mb-4">
+            <span>🎬 Explore All Movies</span>
+          </h2>
+        </div>
+
         {/* ---- Category tabs (left) + Genre filter (right) ---- */}
         <div className="home__controls">
           {/* Tabs: Trending, Popular, Top Rated, Upcoming */}

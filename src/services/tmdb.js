@@ -116,4 +116,13 @@ export const getPersonDetail = (id) =>
 export const getPersonMovieCredits = (id) =>
   fetchFromTMDB(`/person/${id}/movie_credits`);
 
+/** Fetch custom TMDB endpoint or relative URL for MovieRow */
+export const fetchCustomUrl = async (endpoint, params = {}) => {
+  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+  const response = await axios.get(url, {
+    params: { api_key: API_KEY, ...params },
+  });
+  return response.data;
+};
+
 
