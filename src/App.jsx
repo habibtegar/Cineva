@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import BackToTop from './components/BackToTop';
 import Home from './pages/Home';
+import Explore from './pages/Explore';
 import Search from './pages/Search';
 import MovieDetail from './pages/MovieDetail';
 import PersonDetail from './pages/PersonDetail';
@@ -130,6 +131,12 @@ export default function App() {
             path="/"
             element={
               <Home toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
+            }
+          />
+          <Route
+            path="/explore"
+            element={
+              <Explore toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
             }
           />
           <Route

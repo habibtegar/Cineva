@@ -349,6 +349,12 @@ export default function Navbar() {
                 Home
               </Link>
               <Link
+                to="/explore"
+                className={`navbar__link${location.pathname === '/explore' ? ' navbar__link--active' : ''}`}
+              >
+                Explore
+              </Link>
+              <Link
                 to="/actors"
                 className={`navbar__link${location.pathname === '/actors' ? ' navbar__link--active' : ''}`}
               >
@@ -993,6 +999,16 @@ export default function Navbar() {
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             Home
+          </Link>
+          <Link
+            to="/explore"
+            className={`navbar__drawer-link${location.pathname === '/explore' ? ' navbar__drawer-link--active' : ''}`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+            </svg>
+            Explore
           </Link>
           <Link
             to="/favorites"

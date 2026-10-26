@@ -20,17 +20,7 @@ export default function MovieRow({
   const navigate = useNavigate();
 
   // Tentukan link default jika exploreLink tidak disediakan
-  const targetExploreLink = exploreLink || (
-    fetchUrl.includes('trending')
-      ? '/search?q=trending'
-      : fetchUrl.includes('top_rated')
-      ? '/search?q=top'
-      : fetchUrl.includes('with_genres=28')
-      ? '/search?genre=28'
-      : fetchUrl.includes('upcoming')
-      ? '/search?q=upcoming'
-      : '/search'
-  );
+  const targetExploreLink = exploreLink || '/explore';
 
   // Fetch film secara independen untuk baris ini
   useEffect(() => {
