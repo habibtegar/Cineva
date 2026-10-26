@@ -5,24 +5,35 @@ import './MovieCard.css';
 
 export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
   const [imgError, setImgError] = useState(false);
-  const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
+  const isTV = movie.media_type === 'tv' || Boolean(movie.name && !movie.title);
+  const title = movie.title || movie.name || 'Untitled';
+  const releaseDate = movie.release_date || movie.first_air_date;
+  const year = releaseDate ? releaseDate.slice(0, 4) : '—';
   const hasRating = typeof movie.vote_average === 'number' && movie.vote_average > 0;
   const ratingText = hasRating ? movie.vote_average.toFixed(1) : '-';
   const poster = !imgError && movie.poster_path ? getImageUrl(movie.poster_path, 'w342') : null;
+  const targetLink = isTV ? `/tv/${movie.id}` : `/movie/${movie.id}`;
 
   const handleFavClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onToggleFavorite) onToggleFavorite(movie);
+    if (onToggleFavorite) {
+      onToggleFavorite({
+        ...movie,
+        title,
+        release_date: releaseDate,
+        media_type: isTV ? 'tv' : 'movie',
+      });
+    }
   };
 
   return (
     <div className="movie-card transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-500/20 cursor-pointer hover:z-10">
-      <Link to={`/movie/${movie.id}`} className="movie-card__poster-link" tabIndex={0}>
+      <Link to={targetLink} className="movie-card__poster-link" tabIndex={0}>
         {poster ? (
           <img
             src={poster}
-            alt={movie.title}
+            alt={title}
             className="movie-card__poster"
             loading="lazy"
             onError={() => setImgError(true)}
@@ -100,8 +111,8 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
 
       {/* Card info */}
       <div className="movie-card__info">
-        <h3 className="movie-card__title line-clamp-1" title={movie.title}>
-          {movie.title}
+        <h3 className="movie-card__title line-clamp-1" title={title}>
+          {title}
         </h3>
         {movie.character && (
           <p
@@ -111,8 +122,16 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
             {movie.character}
           </p>
         )}
-        {/* Year — higher contrast #9ca3af text-xs */}
-        <p className="movie-card__year text-gray-400 text-xs">{year}</p>
+        {/* Year & type */}
+        <p className="movie-card__year text-gray-400 text-xs flex items-center gap-1.5">
+          <span>{year}</span>
+          {isTV && (
+            <>
+              <span className="text-zinc-600">•</span>
+              <span className="text-zinc-400">TV</span>
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

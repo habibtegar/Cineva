@@ -384,7 +384,7 @@ export default function Navbar() {
                   <input
                     ref={inputRef}
                     type="text"
-                    placeholder="Search movies..."
+                    placeholder="Search movies, TV shows..."
                     value={query}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -408,7 +408,7 @@ export default function Navbar() {
                       }
                     }}
                     className="navbar__search-input"
-                    aria-label="Search movies"
+                    aria-label="Search movies, TV shows"
                   />
                   {query && (
                     <button
@@ -752,14 +752,14 @@ export default function Navbar() {
               <input
                 ref={mobileInputRef}
                 type="text"
-                placeholder="Search movies..."
+                placeholder="Search movies, TV shows..."
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
                   if (e.target.value.trim().length >= 2) setShowDropdown(true);
                 }}
                 className="navbar__mobile-search-input"
-                aria-label="Search movies"
+                aria-label="Search movies, TV shows"
               />
               {query && (
                 <button

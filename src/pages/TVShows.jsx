@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import TVCard from '../components/TVCard';
 import MovieCardSkeleton from '../components/MovieCardSkeleton';
 import ErrorState from '../components/ErrorState';
 import {
@@ -8,7 +8,6 @@ import {
   getTVAiringToday,
   getTVGenres,
   discoverTV,
-  getImageUrl,
 } from '../services/tmdb';
 import './TVShows.css';
 
@@ -18,17 +17,9 @@ const TABS = [
   { key: 'airing_today', label: 'Airing Today' },
 ];
 
-const SORT_OPTIONS = [
-  { value: 'popularity.desc', label: 'Most Popular' },
-  { value: 'vote_average.desc', label: 'Highest Rated' },
-  { value: 'first_air_date.desc', label: 'Newest Releases' },
-];
-
 const PAGE_SIZE = 12;
 
 export default function TVShows({ toggleFavorite, isFavorite }) {
-  const navigate = useNavigate();
-
   // State TV Shows & Pagination
   const [shows, setShows] = useState([]);
   const [page, setPage] = useState(1);
@@ -76,7 +67,7 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
       try {
         let data;
 
-        // Jika ada filter genre atau custom sort yang aktif, gunakan discoverTV
+        // Jika ada filter genre atau custom sort aktif, gunakan discoverTV
         if (activeGenre || sortBy !== 'popularity.desc') {
           const params = {
             page,
@@ -86,11 +77,11 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
             params.with_genres = activeGenre;
           }
           if (sortBy === 'vote_average.desc') {
-            params['vote_count.gte'] = 50; // Filter out series with very few votes for clean ratings
+            params['vote_count.gte'] = 50; // Filter serial TV dengan vote cukup agar rating akurat
           }
           data = await discoverTV(params);
         } else {
-          // Gunakan tab endpoint standar TMDB
+          // Gunakan endpoint preset standar TMDB (Popular, Top Rated, Airing Today)
           const fetchFn = {
             popular: (p) => getTVPopular(p),
             top_rated: (p) => getTVTopRated(p),
@@ -125,9 +116,9 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
     };
   }, [activeTab, page, activeGenre, sortBy, retryCount]);
 
-  // Tab change
+  // Tab change handler — clears custom genre & sort to restore preset
   const handleTabChange = (tabKey) => {
-    if (tabKey === activeTab) return;
+    if (tabKey === activeTab && !activeGenre) return;
     setActiveTab(tabKey);
     setActiveGenre('');
     setSortBy('popularity.desc');
@@ -143,7 +134,7 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
   const currentGenreLabel = genres.find((g) => g.id === Number(activeGenre))?.name || '';
 
   const sectionTitle = activeGenre
-    ? `${currentTabLabel} • ${currentGenreLabel}`
+    ? `${currentGenreLabel} TV Shows`
     : `${currentTabLabel} TV Shows`;
 
   if (error && page === 1) {
@@ -165,21 +156,23 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
     <div className="tv-page">
       <div className="page-container">
         {/* =============================================
-            Header Judul Halaman TV Shows
+            1. Header Judul Halaman TV Shows
             ============================================= */}
         <header className="tv__header">
           <div className="tv__badge">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span>Television Series</span>
           </div>
-          <h1 className="tv__title">📺 TV Shows & Series</h1>
-          <p className="tv__subtitle">
+          <h1 className="tv__title text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
+            📺 TV Shows
+          </h1>
+          <p className="tv__subtitle text-zinc-400 text-sm md:text-base max-w-2xl leading-relaxed">
             Explore popular television series, top rated sagas, and shows airing today across global networks.
           </p>
         </header>
 
         {/* =============================================
-            Controls (Tabs Switcher & Dropdown Filters)
+            3. Controls (Tabs Switcher & Dropdown Filter)
             ============================================= */}
         <div className="tv__controls">
           {/* Tab Switcher: Popular, Top Rated, Airing Today */}
@@ -188,9 +181,9 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
               <button
                 key={tab.key}
                 role="tab"
-                aria-selected={activeTab === tab.key && !activeGenre && sortBy === 'popularity.desc'}
+                aria-selected={activeTab === tab.key && !activeGenre}
                 className={`tv__tab shrink-0${
-                  activeTab === tab.key && !activeGenre && sortBy === 'popularity.desc'
+                  activeTab === tab.key && !activeGenre
                     ? ' tv__tab--active'
                     : ''
                 }`}
@@ -201,7 +194,7 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
             ))}
           </div>
 
-          {/* Filters: Dropdown Genre & Dropdown Sort */}
+          {/* Filters: Dropdown Genre & Contextual Sort */}
           <div className="tv__filters">
             {/* Genre Dropdown */}
             {genres.length > 0 && (
@@ -234,36 +227,36 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
               </div>
             )}
 
-            {/* Sort Dropdown */}
-            <div className="tv__select-inner">
-              <select
-                className="tv__select"
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value);
-                  setPage(1);
-                }}
-                aria-label="Sort TV shows"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <svg
-                className="tv__select-arrow"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
+            {/* Sort Dropdown: Ditampilkan saat genre dipilih agar fokus dan tidak redundan dengan tab preset */}
+            {activeGenre && (
+              <div className="tv__select-inner">
+                <select
+                  className="tv__select"
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setPage(1);
+                  }}
+                  aria-label="Sort TV shows"
+                >
+                  <option value="popularity.desc">Most Popular</option>
+                  <option value="vote_average.desc">Highest Rated</option>
+                  <option value="first_air_date.desc">Newest Air Date</option>
+                </select>
+                <svg
+                  className="tv__select-arrow"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+            )}
 
             {/* Reset Filter Button */}
-            {(activeGenre || sortBy !== 'popularity.desc') && (
+            {activeGenre && (
               <button
                 type="button"
                 className="tv__reset-btn"
@@ -280,14 +273,11 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
           </div>
         </div>
 
-        {/* Section Heading */}
+        {/* Section Heading (tanpa teks Page 1 of 1001) */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
             {sectionTitle}
           </h2>
-          <span className="text-xs text-zinc-400 font-medium">
-            Page {page} of {totalPages}
-          </span>
         </div>
 
         {/* =============================================
@@ -302,107 +292,17 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
         ) : shows.length > 0 ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
-              {shows.map((show) => {
-                const poster = getImageUrl(show.poster_path, 'w342');
-                const year = show.first_air_date ? show.first_air_date.slice(0, 4) : '—';
-                const hasRating = typeof show.vote_average === 'number' && show.vote_average > 0;
-                const ratingText = hasRating ? show.vote_average.toFixed(1) : '-';
-                const isFav = isFavorite ? isFavorite(show.id) : false;
-
-                // Objek yang kompatibel dengan toggleFavorite
-                const showItem = {
-                  ...show,
-                  title: show.name,
-                  release_date: show.first_air_date,
-                  media_type: 'tv',
-                };
-
-                return (
-                  <article
-                    key={show.id}
-                    className="tv-card group/card"
-                    onClick={() => navigate(`/tv/${show.id}`)}
-                  >
-                    {/* Poster Link Wrap */}
-                    <div className="tv-card__poster-link">
-                      {poster ? (
-                        <img
-                          src={poster}
-                          alt={show.name}
-                          className="tv-card__poster"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-zinc-900 flex flex-col justify-between p-3 select-none text-center">
-                          <span className="text-[10px] font-black tracking-widest text-red-500 uppercase mt-4">
-                            Cineva TV
-                          </span>
-                          <p className="text-xs font-semibold text-zinc-200 line-clamp-3">
-                            {show.name}
-                          </p>
-                          <div className="h-2" />
-                        </div>
-                      )}
-
-                      {/* Gradient Overlay */}
-                      <div className="tv-card__overlay" />
-
-                      {/* Rating Badge */}
-                      {hasRating && (
-                        <div className="tv-card__rating" aria-label={`Rating: ${ratingText}`}>
-                          <svg className="w-3 h-3 fill-amber-400" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
-                          <span>{ratingText}</span>
-                        </div>
-                      )}
-
-                      {/* Favorite Button */}
-                      {toggleFavorite && (
-                        <button
-                          type="button"
-                          className={`tv-card__fav ${isFav ? 'tv-card__fav--active' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(showItem);
-                          }}
-                          aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-                        >
-                          <svg
-                            className="w-3.5 h-3.5"
-                            viewBox="0 0 24 24"
-                            fill={isFav ? 'currentColor' : 'none'}
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Show Information */}
-                    <div className="tv-card__info">
-                      <h3 className="tv-card__title line-clamp-1" title={show.name}>
-                        {show.name}
-                      </h3>
-                      <div className="tv-card__meta">
-                        <span>{year}</span>
-                        <span>•</span>
-                        <span>TV Series</span>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+              {shows.map((show) => (
+                <TVCard
+                  key={show.id}
+                  show={show}
+                  onToggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite ? isFavorite(show.id) : false}
+                />
+              ))}
             </div>
 
-            {/* Tombol Load More */}
+            {/* Tombol Load More di tengah bawah untuk Infinite Pagination */}
             {page < totalPages && (
               <div className="tv__load-more">
                 <button

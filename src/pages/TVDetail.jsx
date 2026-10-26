@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import CastCard from '../components/CastCard';
+import TVCard from '../components/TVCard';
 import TrailerModal from '../components/TrailerModal';
 import { SkeletonDetail } from '../components/Skeleton';
 import ErrorState from '../components/ErrorState';
@@ -647,52 +648,14 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
           <section className="detail__recommendations mt-16 pt-8 border-t border-zinc-800">
             <h2 className="detail__section-title">More Like This</h2>
             <div className="tv-recommendations__grid">
-              {recommendations.map((rec) => {
-                const recPoster = getImageUrl(rec.poster_path, 'w342');
-                const recYear = rec.first_air_date ? rec.first_air_date.slice(0, 4) : '—';
-                const recRating = rec.vote_average ? rec.vote_average.toFixed(1) : '-';
-
-                return (
-                  <article
-                    key={rec.id}
-                    className="tv-card group/card"
-                    onClick={() => navigate(`/tv/${rec.id}`)}
-                  >
-                    <div className="tv-card__poster-link">
-                      {recPoster ? (
-                        <img
-                          src={recPoster}
-                          alt={rec.name}
-                          className="tv-card__poster"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-zinc-900 flex items-center justify-center p-3 text-center text-xs text-zinc-400">
-                          {rec.name}
-                        </div>
-                      )}
-                      <div className="tv-card__overlay" />
-                      {rec.vote_average > 0 && (
-                        <div className="tv-card__rating">
-                          <svg className="w-3 h-3 fill-amber-400" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
-                          <span>{recRating}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="tv-card__info">
-                      <h3 className="tv-card__title line-clamp-1" title={rec.name}>
-                        {rec.name}
-                      </h3>
-                      <p className="tv-card__meta">{recYear} • TV Series</p>
-                    </div>
-                  </article>
-                );
-              })}
+              {recommendations.map((rec) => (
+                <TVCard
+                  key={rec.id}
+                  show={rec}
+                  onToggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite ? isFavorite(rec.id) : false}
+                />
+              ))}
             </div>
           </section>
         )}

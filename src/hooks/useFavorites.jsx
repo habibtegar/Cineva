@@ -196,13 +196,13 @@ export function useFavorites() {
         } finally {
           pendingOperationsRef.current.delete(movieIdStr);
         }
-      } else {
         const movieData = {
           id: movie.id,
-          title: movie.title || '',
+          title: movie.title || movie.name || '',
           poster_path: movie.poster_path || '',
-          release_date: movie.release_date || '',
+          release_date: movie.release_date || movie.first_air_date || '',
           vote_average: movie.vote_average ?? 0,
+          media_type: movie.media_type || (movie.name ? 'tv' : 'movie'),
         };
 
         // Optimistic update: tambahkan ke state lokal
