@@ -22,7 +22,6 @@ let lastFavoriteActionTime = 0;
  * Toast feedback modal modern di tengah layar untuk penambahan / penghapusan favorit.
  */
 function showFavoriteModalToast(isAdded) {
-  // Dismiss notifikasi favorit sebelumnya seketika agar tidak menumpuk
   toast.dismiss(FAVORITE_TOAST_ID);
 
   toast.custom(
@@ -88,7 +87,22 @@ function showFavoriteModalToast(isAdded) {
 }
 
 /**
- * Hook to manage favorite movies stored in Firebase Cloud Firestore.
+ * Normalisasi data film atau serial TV ke skema standar Cineva
+ */
+function normalizeFavoriteData(item, explicitMediaType) {
+  const mediaType = explicitMediaType || item.media_type || (item.name ? 'tv' : 'movie');
+  return {
+    id: item.id,
+    media_type: mediaType === 'tv' ? 'tv' : 'movie',
+    title: item.title || item.name || 'Untitled',
+    poster_path: item.poster_path || '',
+    vote_average: item.vote_average || 0,
+    release_date: item.release_date || item.first_air_date || '',
+  };
+}
+
+/**
+ * Hook to manage favorites (movies & TV series) stored in Firebase Cloud Firestore.
  * Synchronized with the logged-in Google account under users/{user.uid}/favorites.
  */
 export function useFavorites() {
@@ -97,7 +111,7 @@ export function useFavorites() {
   const [loading, setLoading] = useState(false);
   const pendingOperationsRef = useRef(new Set());
 
-  // Ambil daftar film favorit dari Firestore berdasarkan user.uid saat aplikasi dimuat atau user berubah
+  // Ambil daftar film & serial TV favorit dari Firestore berdasarkan user.uid
   useEffect(() => {
     let isMounted = true;
 
@@ -112,10 +126,23 @@ export function useFavorites() {
         const favsRef = collection(db, 'users', user.uid, 'favorites');
         const querySnapshot = await getDocs(favsRef);
         if (isMounted) {
-          const loadedFavorites = querySnapshot.docs.map((docSnap) => ({
-            id: docSnap.data().id ?? (Number(docSnap.id) || docSnap.id),
-            ...docSnap.data(),
-          }));
+          const loadedFavorites = querySnapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            const rawType = data.media_type || (data.name ? 'tv' : 'movie');
+            const mediaType = rawType === 'tv' ? 'tv' : 'movie';
+            const rawId = data.id ?? (Number(docSnap.id.replace(/^(movie|tv)_/, '')) || docSnap.id);
+
+            return {
+              ...data,
+              id: rawId,
+              media_type: mediaType,
+              title: data.title || data.name || 'Untitled',
+              poster_path: data.poster_path || '',
+              vote_average: data.vote_average || 0,
+              release_date: data.release_date || data.first_air_date || '',
+              docId: docSnap.id,
+            };
+          });
           setFavorites(loadedFavorites);
         }
       } catch (error) {
@@ -134,34 +161,54 @@ export function useFavorites() {
     };
   }, [user?.uid]);
 
+  /**
+   * Cek apakah item sudah masuk favorit berdasarkan ID dan opsional tipe media ('movie' | 'tv')
+   */
   const isFavorite = useCallback(
-    (movieId) => favorites.some((m) => String(m.id) === String(movieId)),
+    (itemId, mediaType) => {
+      if (!itemId) return false;
+      const targetIdStr = String(itemId);
+      return favorites.some((item) => {
+        const matchId = String(item.id) === targetIdStr;
+        if (!matchId) return false;
+        if (mediaType) {
+          const itemType = item.media_type || (item.name ? 'tv' : 'movie');
+          return itemType === mediaType;
+        }
+        return true;
+      });
+    },
     [favorites]
   );
 
+  /**
+   * Tambah atau hapus favorit secara aman dengan ID unik per tipe media
+   */
   const toggleFavorite = useCallback(
-    async (movie) => {
-      if (!movie || !movie.id) return;
+    async (item, explicitMediaType) => {
+      if (!item || !item.id) return;
 
       const now = Date.now();
-      // Proteksi spam klik beruntun (cooldown 350ms)
       if (now - lastFavoriteActionTime < SPAM_COOLDOWN_MS) {
         return;
       }
 
-      const movieIdStr = String(movie.id);
+      const mediaType = explicitMediaType || item.media_type || (item.name ? 'tv' : 'movie');
+      const normalizedData = normalizeFavoriteData(item, mediaType);
+      const uniqueDocId = `${normalizedData.media_type}_${normalizedData.id}`;
+      const itemIdStr = String(normalizedData.id);
 
-      // Cegah operasi ganda saat Firestore masih memproses film yang sama
-      if (pendingOperationsRef.current.has(movieIdStr)) {
+      // Cegah race-condition / spam klik bersamaan
+      if (pendingOperationsRef.current.has(uniqueDocId)) {
         return;
       }
 
       lastFavoriteActionTime = now;
 
-      // Tombol 'Favorite' hanya bisa diklik jika pengguna sudah login (cek dari AuthContext)
+      // Wajib login untuk menyimpan favorit
       if (!user?.uid) {
         toast.dismiss();
-        toast.error('Silakan login untuk menyimpan film', {
+        toast.error('Silakan login untuk menyimpan favorit', {
           id: 'cineva-auth-toast',
           position: 'top-center',
           duration: 3000,
@@ -169,70 +216,107 @@ export function useFavorites() {
         return;
       }
 
-      pendingOperationsRef.current.add(movieIdStr);
-      const movieTitle = movie.title || movie.name || 'Film';
-      const isAlreadyFav = favorites.some((m) => String(m.id) === movieIdStr);
-      const movieDocRef = doc(db, 'users', user.uid, 'favorites', movieIdStr);
+      pendingOperationsRef.current.add(uniqueDocId);
+      const displayTitle = normalizedData.title || 'Item';
+
+      // Cek apakah item sudah ada di daftar favorit
+      const existingItem = favorites.find(
+        (m) =>
+          String(m.id) === itemIdStr &&
+          (m.media_type || (m.name ? 'tv' : 'movie')) === normalizedData.media_type
+      );
+      const isAlreadyFav = Boolean(existingItem);
 
       if (isAlreadyFav) {
-        // Optimistic update: hapus dari state lokal
-        setFavorites((prev) => prev.filter((m) => String(m.id) !== movieIdStr));
+        // --- HAPUS DARI FAVORIT ---
+        // Optimistic update
+        setFavorites((prev) =>
+          prev.filter(
+            (m) =>
+              !(
+                String(m.id) === itemIdStr &&
+                (m.media_type || (m.name ? 'tv' : 'movie')) === normalizedData.media_type
+              )
+          )
+        );
 
-        // Tampilkan feedback pop-up kotak di tengah layar
         showFavoriteModalToast(false);
 
         try {
+          const targetDocId = existingItem?.docId || uniqueDocId;
+          const movieDocRef = doc(db, 'users', user.uid, 'favorites', targetDocId);
           await deleteDoc(movieDocRef);
+
+          // Jika ada dokumen legacy tanpa prefix tipe media, bersihkan juga
+          if (targetDocId !== itemIdStr) {
+            try {
+              const legacyDocRef = doc(db, 'users', user.uid, 'favorites', itemIdStr);
+              await deleteDoc(legacyDocRef);
+            } catch {
+              // Abaikan jika tidak ada dokumen legacy
+            }
+          }
         } catch (error) {
           console.error('Failed to remove favorite from Firestore:', error);
           // Rollback jika gagal
-          setFavorites((prev) => [...prev, movie]);
+          setFavorites((prev) => [...prev, existingItem || normalizedData]);
           toast.dismiss(FAVORITE_TOAST_ID);
-          toast.error(`Gagal menghapus ${movieTitle} dari favorit`, {
+          toast.error(`Gagal menghapus ${displayTitle} dari favorit`, {
             id: 'cineva-error-toast',
             position: 'top-center',
             duration: 3000,
           });
         } finally {
-          pendingOperationsRef.current.delete(movieIdStr);
+          pendingOperationsRef.current.delete(uniqueDocId);
         }
-        const movieData = {
-          id: movie.id,
-          title: movie.title || movie.name || '',
-          poster_path: movie.poster_path || '',
-          release_date: movie.release_date || movie.first_air_date || '',
-          vote_average: movie.vote_average ?? 0,
-          media_type: movie.media_type || (movie.name ? 'tv' : 'movie'),
+      } else {
+        // --- TAMBAH KE FAVORIT ---
+        const itemToSave = {
+          ...normalizedData,
+          docId: uniqueDocId,
         };
 
-        // Optimistic update: tambahkan ke state lokal
-        setFavorites((prev) => [...prev, movieData]);
+        // Optimistic update
+        setFavorites((prev) => [...prev, itemToSave]);
 
-        // Tampilkan feedback pop-up kotak di tengah layar
         showFavoriteModalToast(true);
 
         try {
-          await setDoc(movieDocRef, movieData);
+          const movieDocRef = doc(db, 'users', user.uid, 'favorites', uniqueDocId);
+          await setDoc(movieDocRef, normalizedData);
         } catch (error) {
           console.error('Failed to save favorite to Firestore:', error);
           // Rollback jika gagal
-          setFavorites((prev) => prev.filter((m) => String(m.id) !== movieIdStr));
+          setFavorites((prev) =>
+            prev.filter(
+              (m) =>
+                !(
+                  String(m.id) === itemIdStr &&
+                  (m.media_type || (m.name ? 'tv' : 'movie')) === normalizedData.media_type
+                )
+            )
+          );
           toast.dismiss(FAVORITE_TOAST_ID);
-          toast.error(`Gagal menambahkan ${movieTitle} ke favorit`, {
+          toast.error(`Gagal menambahkan ${displayTitle} ke favorit`, {
             id: 'cineva-error-toast',
             position: 'top-center',
             duration: 3000,
           });
         } finally {
-          pendingOperationsRef.current.delete(movieIdStr);
+          pendingOperationsRef.current.delete(uniqueDocId);
         }
       }
     },
     [user, favorites]
   );
 
-  return { favorites, isFavorite, toggleFavorite, loading };
+  return {
+    favorites,
+    isFavorite,
+    toggleFavorite,
+    addToFavorites: toggleFavorite,
+    loading,
+  };
 }
 
 export default useFavorites;
-

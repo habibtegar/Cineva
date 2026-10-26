@@ -297,7 +297,7 @@ export default function TVShows({ toggleFavorite, isFavorite }) {
                   key={show.id}
                   show={show}
                   onToggleFavorite={toggleFavorite}
-                  isFavorite={isFavorite ? isFavorite(show.id) : false}
+                  isFavorite={isFavorite}
                 />
               ))}
             </div>

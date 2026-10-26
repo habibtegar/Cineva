@@ -312,10 +312,10 @@ export default function Profile({
           <div className="movie-grid__list grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
             {sortedFavorites.map((movie) => (
               <MovieCard
-                key={movie.id}
+                key={`${movie.media_type || 'movie'}-${movie.id}`}
                 movie={movie}
                 onToggleFavorite={toggleFavorite}
-                isFavorite={isFavorite ? isFavorite(movie.id) : true}
+                isFavorite={isFavorite ? isFavorite(movie.id, movie.media_type || (movie.name ? 'tv' : 'movie')) : true}
               />
             ))}
           </div>

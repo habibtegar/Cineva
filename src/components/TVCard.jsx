@@ -21,11 +21,16 @@ export default function TVCard({ show, onToggleFavorite, isFavorite }) {
     media_type: 'tv',
   };
 
+  const isFav =
+    typeof isFavorite === 'function'
+      ? isFavorite(show.id, 'tv')
+      : Boolean(isFavorite);
+
   const handleFavClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (onToggleFavorite) {
-      onToggleFavorite(tvItem);
+      onToggleFavorite(tvItem, 'tv');
     }
   };
 
@@ -92,15 +97,15 @@ export default function TVCard({ show, onToggleFavorite, isFavorite }) {
       {/* Floating Heart Button — top-right with identical design & Firestore toggle */}
       <button
         type="button"
-        className={`movie-card__fav${isFavorite ? ' movie-card__fav--active' : ''}`}
+        className={`movie-card__fav${isFav ? ' movie-card__fav--active' : ''}`}
         onClick={handleFavClick}
-        aria-label={isFavorite ? `Remove ${show.name} from favorites` : `Add ${show.name} to favorites`}
-        aria-pressed={isFavorite}
+        aria-label={isFav ? `Remove ${show.name} from favorites` : `Add ${show.name} to favorites`}
+        aria-pressed={isFav}
       >
         <svg
           viewBox="0 0 24 24"
-          fill={isFavorite ? '#ef4444' : 'none'}
-          stroke={isFavorite ? '#ef4444' : '#ffffff'}
+          fill={isFav ? '#ef4444' : 'none'}
+          stroke={isFav ? '#ef4444' : '#ffffff'}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"

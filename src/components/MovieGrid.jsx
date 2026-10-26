@@ -8,14 +8,17 @@ export default function MovieGrid({ title, movies, onToggleFavorite, isFavorite 
     <section className="movie-grid">
       {title && <h2 className="movie-grid__title">{title}</h2>}
       <div className="movie-grid__list grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
-        {movies.map((movie) => (
-          <MovieCard
-            key={movie.id}
-            movie={movie}
-            onToggleFavorite={onToggleFavorite}
-            isFavorite={isFavorite ? isFavorite(movie.id) : false}
-          />
-        ))}
+        {movies.map((movie) => {
+          const mediaType = movie.media_type || (movie.name ? 'tv' : 'movie');
+          return (
+            <MovieCard
+              key={`${mediaType}-${movie.id}`}
+              movie={movie}
+              onToggleFavorite={onToggleFavorite}
+              isFavorite={isFavorite ? isFavorite(movie.id, mediaType) : false}
+            />
+          );
+        })}
       </div>
     </section>
   );

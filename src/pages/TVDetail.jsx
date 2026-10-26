@@ -370,7 +370,7 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
     release_date: tv.first_air_date,
     media_type: 'tv',
   };
-  const isFav = isFavorite ? isFavorite(tv.id) : false;
+  const isFav = isFavorite ? isFavorite(tv.id, 'tv') : false;
 
   // Cast members
   const castList = tv.credits?.cast?.slice(0, 14) || [];
@@ -480,7 +480,7 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
                   className={`detail__action-btn detail__action-btn--fav cursor-pointer${
                     isFav ? ' detail__action-btn--fav-active' : ''
                   }`}
-                  onClick={() => toggleFavorite(tvItem)}
+                  onClick={() => toggleFavorite(tvItem, 'tv')}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -653,7 +653,7 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
                   key={rec.id}
                   show={rec}
                   onToggleFavorite={toggleFavorite}
-                  isFavorite={isFavorite ? isFavorite(rec.id) : false}
+                  isFavorite={isFavorite}
                 />
               ))}
             </div>

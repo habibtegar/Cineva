@@ -13,17 +13,24 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
   const ratingText = hasRating ? movie.vote_average.toFixed(1) : '-';
   const poster = !imgError && movie.poster_path ? getImageUrl(movie.poster_path, 'w342') : null;
   const targetLink = isTV ? `/tv/${movie.id}` : `/movie/${movie.id}`;
+  const isFav =
+    typeof isFavorite === 'function'
+      ? isFavorite(movie.id, isTV ? 'tv' : 'movie')
+      : Boolean(isFavorite);
 
   const handleFavClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (onToggleFavorite) {
-      onToggleFavorite({
-        ...movie,
-        title,
-        release_date: releaseDate,
-        media_type: isTV ? 'tv' : 'movie',
-      });
+      onToggleFavorite(
+        {
+          ...movie,
+          title,
+          release_date: releaseDate,
+          media_type: isTV ? 'tv' : 'movie',
+        },
+        isTV ? 'tv' : 'movie'
+      );
     }
   };
 
@@ -91,15 +98,15 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
       {/* Favorite button — top-right, standardized */}
       <button
         type="button"
-        className={`movie-card__fav${isFavorite ? ' movie-card__fav--active' : ''}`}
+        className={`movie-card__fav${isFav ? ' movie-card__fav--active' : ''}`}
         onClick={handleFavClick}
-        aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        aria-pressed={isFavorite}
+        aria-label={isFav ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
+        aria-pressed={isFav}
       >
         <svg
           viewBox="0 0 24 24"
-          fill={isFavorite ? '#ef4444' : 'none'}
-          stroke={isFavorite ? '#ef4444' : '#ffffff'}
+          fill={isFav ? '#ef4444' : 'none'}
+          stroke={isFav ? '#ef4444' : '#ffffff'}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -112,7 +119,9 @@ export default function MovieCard({ movie, onToggleFavorite, isFavorite }) {
       {/* Card info */}
       <div className="movie-card__info">
         <h3 className="movie-card__title line-clamp-1" title={title}>
-          {title}
+          <Link to={targetLink} className="hover:text-red-400 transition-colors">
+            {title}
+          </Link>
         </h3>
         {movie.character && (
           <p
