@@ -52,6 +52,7 @@ function ActorCard({ person }) {
             alt={person.name}
             className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
           />
         ) : (

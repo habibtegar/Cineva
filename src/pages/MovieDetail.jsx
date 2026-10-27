@@ -605,9 +605,15 @@ export default function MovieDetail({ toggleFavorite, isFavorite }) {
 
         <div className="detail__top">
           {/* Poster */}
-          <div className="detail__poster-wrap">
+          <div className="detail__poster-wrap aspect-[2/3] overflow-hidden">
             {poster && (
-              <img src={poster} alt={movie.title} className="detail__poster" />
+              <img
+                src={poster}
+                alt={movie.title}
+                className="detail__poster w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
             )}
           </div>
 

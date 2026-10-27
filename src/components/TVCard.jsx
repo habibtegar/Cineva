@@ -36,13 +36,14 @@ export default function TVCard({ show, onToggleFavorite, isFavorite }) {
 
   return (
     <div className="movie-card transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-500/20 cursor-pointer hover:z-10 group/card">
-      <Link to={`/tv/${show.id}`} className="movie-card__poster-link" tabIndex={0}>
+      <Link to={`/tv/${show.id}`} className="movie-card__poster-link aspect-[2/3] block relative overflow-hidden" tabIndex={0}>
         {poster ? (
           <img
             src={poster}
             alt={show.name}
-            className="movie-card__poster"
+            className="movie-card__poster w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
           />
         ) : (

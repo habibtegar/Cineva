@@ -8,7 +8,7 @@ export default function HeroSection({ movie, genres = [], onWatchTrailer }) {
 
   if (!movie) return null;
 
-  const backdrop = getBackdropUrl(movie.backdrop_path, 'original');
+  const backdrop = getBackdropUrl(movie.backdrop_path, 'w1280');
   const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : '';
 
@@ -31,6 +31,8 @@ export default function HeroSection({ movie, genres = [], onWatchTrailer }) {
             alt={movie.title || 'Movie Banner'}
             className={`hero__backdrop-img${imgLoaded ? ' hero__backdrop-img--loaded' : ''}`}
             onLoad={() => setImgLoaded(true)}
+            fetchPriority="high"
+            decoding="async"
           />
         )}
         {/* Overlay gradien dari bawah */}

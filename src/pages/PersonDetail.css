@@ -51,6 +51,7 @@
 
 .person-detail__photo {
   width: 100%;
+  aspect-ratio: 2 / 3;
   border-radius: 12px;
   object-fit: cover;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);

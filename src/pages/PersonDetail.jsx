@@ -111,7 +111,13 @@ export default function PersonDetail({ toggleFavorite, isFavorite }) {
         {/* Left Column: Photo & Personal Info Card */}
         <div className="person-detail__sidebar">
           {photo ? (
-            <img src={photo} alt={person.name} className="person-detail__photo" />
+            <img
+              src={photo}
+              alt={person.name}
+              className="person-detail__photo aspect-[2/3] object-cover"
+              loading="lazy"
+              decoding="async"
+            />
           ) : (
             <div className="person-detail__no-photo">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

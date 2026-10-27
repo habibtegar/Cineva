@@ -224,13 +224,14 @@ export default function MovieRow({
                   className="movie-row__card group/card"
                 >
                   {/* Poster Wrapper */}
-                  <div className="movie-row__poster-wrapper">
+                  <div className="movie-row__poster-wrapper aspect-[2/3]">
                     {poster ? (
                       <img
                         src={poster}
                         alt={movie.title}
                         className="movie-row__poster-img"
                         loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}

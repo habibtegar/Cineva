@@ -584,9 +584,15 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
         {/* Top Section: Poster & Meta Info */}
         <div className="detail__top">
           {/* Poster */}
-          <div className="detail__poster-wrap">
+          <div className="detail__poster-wrap aspect-[2/3] overflow-hidden">
             {poster ? (
-              <img src={poster} alt={tv.name} className="detail__poster" />
+              <img
+                src={poster}
+                alt={tv.name}
+                className="detail__poster w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
               <div className="w-full aspect-[2/3] bg-zinc-900 rounded-xl flex items-center justify-center p-4 text-center">
                 <span className="text-sm font-bold text-zinc-400">{tv.name}</span>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import toast, { Toaster, useToasterStore } from 'react-hot-toast';
 import SplashScreen from './components/SplashScreen';
@@ -6,20 +6,43 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import BackToTop from './components/BackToTop';
-import Home from './pages/Home';
-import Explore from './pages/Explore';
-import Search from './pages/Search';
-import MovieDetail from './pages/MovieDetail';
-import PersonDetail from './pages/PersonDetail';
-import TVShows from './pages/TVShows';
-import TVDetail from './pages/TVDetail';
-import Favorites from './pages/Favorites';
-import Profile from './pages/Profile';
-import PublicProfile from './pages/PublicProfile';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Feedback from './pages/Feedback';
 import { useFavorites } from './hooks/useFavorites';
+
+// Code splitting: Lazy-loaded route pages for reduced initial bundle and faster load times
+const Home = lazy(() => import('./pages/Home'));
+const Explore = lazy(() => import('./pages/Explore'));
+const Search = lazy(() => import('./pages/Search'));
+const MovieDetail = lazy(() => import('./pages/MovieDetail'));
+const PersonDetail = lazy(() => import('./pages/PersonDetail'));
+const TVShows = lazy(() => import('./pages/TVShows'));
+const TVDetail = lazy(() => import('./pages/TVDetail'));
+const Favorites = lazy(() => import('./pages/Favorites'));
+const Profile = lazy(() => import('./pages/Profile'));
+const PublicProfile = lazy(() => import('./pages/PublicProfile'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Feedback = lazy(() => import('./pages/Feedback'));
+
+// Simple branded fallback spinner while lazy components load
+function PageFallback() {
+  return (
+    <div
+      className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-center px-4"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="relative w-12 h-12">
+        <div className="w-12 h-12 rounded-full border-2 border-red-600/20 border-t-red-600 animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
+        </div>
+      </div>
+      <p className="text-xs uppercase tracking-widest font-semibold text-zinc-500">
+        Loading...
+      </p>
+    </div>
+  );
+}
 
 export default function App() {
   // Hanya tampilkan splash screen pada awal kunjungan sesi, tidak berulang saat navigasi rute
@@ -107,112 +130,114 @@ export default function App() {
       />
       <ScrollToTop />
       {!isAuthPage && <Navbar />}
-      <main>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Home toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
-            }
-          />
-          <Route
-            path="/explore"
-            element={
-              <Explore toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
-            }
-          />
-          <Route
-            path="/movies"
-            element={
-              <Explore toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
-            }
-          />
-          <Route
-            path="/search"
-            element={
-              <Search toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
-            }
-          />
-          <Route
-            path="/movie/:id"
-            element={
-              <MovieDetail
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-              />
-            }
-          />
-          <Route
-            path="/person/:id"
-            element={
-              <PersonDetail
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-              />
-            }
-          />
-          <Route
-            path="/actor/:id"
-            element={
-              <PersonDetail
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-              />
-            }
-          />
-          <Route
-            path="/tv"
-            element={
-              <TVShows
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-              />
-            }
-          />
-          <Route
-            path="/tv/:id"
-            element={
-              <TVDetail
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-              />
-            }
-          />
-          <Route
-            path="/favorites"
-            element={
-              <Favorites
-                favorites={favorites}
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-                loading={loading}
-              />
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <Profile
-                favorites={favorites}
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-                loading={loading}
-              />
-            }
-          />
-          <Route
-            path="/user/:userId"
-            element={
-              <PublicProfile
-                toggleFavorite={toggleFavorite}
-                isFavorite={isFavorite}
-              />
-            }
-          />
-          <Route path="/feedback" element={<Feedback />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
+      <main className="min-h-screen">
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Home toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
+              }
+            />
+            <Route
+              path="/explore"
+              element={
+                <Explore toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
+              }
+            />
+            <Route
+              path="/movies"
+              element={
+                <Explore toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <Search toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
+              }
+            />
+            <Route
+              path="/movie/:id"
+              element={
+                <MovieDetail
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                />
+              }
+            />
+            <Route
+              path="/person/:id"
+              element={
+                <PersonDetail
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                />
+              }
+            />
+            <Route
+              path="/actor/:id"
+              element={
+                <PersonDetail
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                />
+              }
+            />
+            <Route
+              path="/tv"
+              element={
+                <TVShows
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                />
+              }
+            />
+            <Route
+              path="/tv/:id"
+              element={
+                <TVDetail
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                />
+              }
+            />
+            <Route
+              path="/favorites"
+              element={
+                <Favorites
+                  favorites={favorites}
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                  loading={loading}
+                />
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <Profile
+                  favorites={favorites}
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                  loading={loading}
+                />
+              }
+            />
+            <Route
+              path="/user/:userId"
+              element={
+                <PublicProfile
+                  toggleFavorite={toggleFavorite}
+                  isFavorite={isFavorite}
+                />
+              }
+            />
+            <Route path="/feedback" element={<Feedback />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </Suspense>
       </main>
       {!isAuthPage && <Footer />}
       <BackToTop />
