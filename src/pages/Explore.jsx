@@ -41,7 +41,7 @@ export default function Explore({ toggleFavorite, isFavorite }) {
 
   // Dynamic Document Title
   useEffect(() => {
-    document.title = 'Explore All Movies — Cineva';
+    document.title = 'Movies — Cineva';
     window.scrollTo(0, 0);
   }, []);
 
@@ -148,7 +148,7 @@ export default function Explore({ toggleFavorite, isFavorite }) {
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span>Curated Film Catalog</span>
           </div>
-          <h1 className="explore__title">🎬 Explore All Movies</h1>
+          <h1 className="explore__title">🎬 Movies</h1>
           <p className="explore__subtitle">
             Discover trending titles, critically acclaimed classics, and upcoming cinema releases filtered by your favorite genres.
           </p>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import toast, { Toaster, useToasterStore } from 'react-hot-toast';
+import SplashScreen from './components/SplashScreen';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
@@ -21,7 +22,13 @@ import Feedback from './pages/Feedback';
 import { useFavorites } from './hooks/useFavorites';
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  // Hanya tampilkan splash screen pada awal kunjungan sesi, tidak berulang saat navigasi rute
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !sessionStorage.getItem('cineva_intro_seen');
+    }
+    return false;
+  });
   const location = useLocation();
   const { favorites, isFavorite, toggleFavorite, loading } = useFavorites();
 
@@ -34,33 +41,6 @@ export default function App() {
       .forEach((t) => toast.dismiss(t.id));
   }, [toasts]);
 
-  // Timer Initial Splash Screen (2 detik)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Tampilan Splash Screen saat pertama kali dimuat
-  if (showSplash) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 select-none overflow-hidden">
-        {/* Glow ambient sinematik */}
-        <div className="absolute w-[420px] h-[420px] bg-red-600/15 rounded-full blur-[140px] pointer-events-none" />
-
-        <div className="relative flex flex-col items-center text-center px-4">
-          <h1 className="text-4xl md:text-6xl font-bold text-red-600 tracking-[0.3em] uppercase drop-shadow-[0_0_35px_rgba(220,38,38,0.65)]">
-            Cineva
-          </h1>
-          <p className="mt-3 text-xs md:text-sm text-zinc-400 font-medium tracking-[0.35em] uppercase opacity-75">
-            Discover Your Next Favorite Film
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Sembunyikan Navbar dan Footer saat pengguna berada di halaman login atau register
   const isAuthPage =
     location.pathname.startsWith('/login') ||
@@ -68,6 +48,7 @@ export default function App() {
 
   return (
     <>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <Toaster
         position="top-center"
         gutter={8}
@@ -136,6 +117,12 @@ export default function App() {
           />
           <Route
             path="/explore"
+            element={
+              <Explore toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
+            }
+          />
+          <Route
+            path="/movies"
             element={
               <Explore toggleFavorite={toggleFavorite} isFavorite={isFavorite} />
             }
