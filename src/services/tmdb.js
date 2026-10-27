@@ -144,6 +144,9 @@ export const getTrailerVideo = (videoResults = []) => {
 export const searchMovies = (query, page = 1, extraParams = {}) =>
   fetchFromTMDB('/search/movie', { query, page, ...extraParams });
 
+export const searchMulti = (query, page = 1, extraParams = {}) =>
+  fetchFromTMDB('/search/multi', { query, page, ...extraParams });
+
 /** Discover movies with filters */
 export const discoverMovies = (params = {}) =>
   fetchFromTMDB('/discover/movie', {

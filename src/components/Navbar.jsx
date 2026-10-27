@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { searchMovies, getImageUrl } from '../services/tmdb';
+import { searchMovies, searchMulti, getImageUrl } from '../services/tmdb';
 import { useAuth } from '../hooks/useAuth';
 import {
   getRecentSearches,
@@ -175,16 +175,19 @@ export default function Navbar() {
     setIsSearching(true);
     let active = true;
 
-    searchMovies(trimmed, 1)
+    searchMulti(trimmed, 1)
       .then((data) => {
         if (active) {
-          // Take top 5 results max
-          setSearchResults(data.results?.slice(0, 5) || []);
+          const list = Array.isArray(data?.results) ? data.results : [];
+          const filteredResults = list.filter(
+            (item) => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path
+          );
+          setSearchResults(filteredResults.slice(0, 5));
           setShowDropdown(true);
         }
       })
       .catch((err) => {
-        console.error('Failed to search movies:', err);
+        console.error('Failed to search TMDB multi:', err);
         if (active) setSearchResults([]);
       })
       .finally(() => {
@@ -296,7 +299,7 @@ export default function Navbar() {
     setShowDropdown(false);
   };
 
-  const handleSelectMovie = (movieId) => {
+  const handleSelectItem = (item) => {
     const trimmed = query.trim();
     if (trimmed) {
       saveRecentSearch(trimmed);
@@ -306,7 +309,16 @@ export default function Navbar() {
     setMobileSearchOpen(false);
     setQuery('');
     setDrawerOpen(false);
-    navigate(`/movie/${movieId}`);
+
+    if (item.media_type === 'tv') {
+      navigate(`/tv/${item.id}`);
+    } else {
+      navigate(`/movie/${item.id}`);
+    }
+  };
+
+  const handleSelectMovie = (movieId) => {
+    handleSelectItem({ id: movieId, media_type: 'movie' });
   };
 
   const handleSearchSubmit = (e) => {
@@ -459,25 +471,27 @@ export default function Navbar() {
                         {isSearching ? (
                           <div className="navbar__dropdown-loading">
                             <span className="navbar__dropdown-spinner" />
-                            <span>Searching movies...</span>
+                            <span>Searching...</span>
                           </div>
                         ) : searchResults.length > 0 ? (
                           <>
                             <div className="navbar__dropdown-list">
-                              {searchResults.map((movie) => {
-                                const poster = getImageUrl(movie.poster_path, 'w92');
-                                const year = movie.release_date ? movie.release_date.slice(0, 4) : '—';
-                                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
+                              {searchResults.map((item) => {
+                                const title = item.title || item.name;
+                                const poster = getImageUrl(item.poster_path, 'w92');
+                                const year = (item.release_date || item.first_air_date || '').slice(0, 4) || '—';
+                                const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
+                                const isTV = item.media_type === 'tv';
 
                                 return (
                                   <button
-                                    key={movie.id}
+                                    key={`${item.media_type}-${item.id}`}
                                     type="button"
                                     className="navbar__dropdown-item"
-                                    onClick={() => handleSelectMovie(movie.id)}
+                                    onClick={() => handleSelectItem(item)}
                                   >
                                     {poster ? (
-                                      <img src={poster} alt={movie.title} className="navbar__dropdown-poster" />
+                                      <img src={poster} alt={title} className="navbar__dropdown-poster" />
                                     ) : (
                                       <div className="navbar__dropdown-poster navbar__dropdown-poster--empty">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -487,9 +501,16 @@ export default function Navbar() {
                                       </div>
                                     )}
                                     <div className="navbar__dropdown-info">
-                                      <h4 className="navbar__dropdown-title">{movie.title}</h4>
+                                      <h4 className="navbar__dropdown-title">{title}</h4>
                                       <div className="navbar__dropdown-meta">
                                         <span className="navbar__dropdown-year">{year}</span>
+                                        <span
+                                          className={`navbar__dropdown-badge ${
+                                            isTV ? 'navbar__dropdown-badge--tv' : 'navbar__dropdown-badge--movie'
+                                          }`}
+                                        >
+                                          {isTV ? 'TV Series' : 'Movie'}
+                                        </span>
                                         {rating && (
                                           <span className="navbar__dropdown-rating">
                                             ★ {rating}
@@ -506,12 +527,12 @@ export default function Navbar() {
                               className="navbar__dropdown-footer"
                               onClick={handleSearchSubmit}
                             >
-                              See all results for "{query}" &rarr;
+                              See all results for "{query.trim()}" &rarr;
                             </button>
                           </>
                         ) : (
                           <div className="navbar__dropdown-empty">
-                            No movies found
+                            No results found
                           </div>
                         )}
                       </>
@@ -815,34 +836,34 @@ export default function Navbar() {
                 {isSearching ? (
                   <div className="navbar__dropdown-loading">
                     <span className="navbar__dropdown-spinner" />
-                    <span>Searching movies...</span>
+                    <span>Searching...</span>
                   </div>
                 ) : searchResults.length > 0 ? (
                   <>
                     <div className="navbar__dropdown-list">
-                      {searchResults.map((movie) => {
-                        const poster = getImageUrl(movie.poster_path, 'w92');
-                        const year = movie.release_date
-                          ? movie.release_date.slice(0, 4)
-                          : '—';
-                        const rating = movie.vote_average
-                          ? movie.vote_average.toFixed(1)
+                      {searchResults.map((item) => {
+                        const title = item.title || item.name;
+                        const poster = getImageUrl(item.poster_path, 'w92');
+                        const year = (item.release_date || item.first_air_date || '').slice(0, 4) || '—';
+                        const rating = item.vote_average
+                          ? item.vote_average.toFixed(1)
                           : null;
+                        const isTV = item.media_type === 'tv';
 
                         return (
                           <button
-                            key={movie.id}
+                            key={`${item.media_type}-${item.id}`}
                             type="button"
                             className="navbar__dropdown-item"
                             onClick={() => {
-                              handleSelectMovie(movie.id);
+                              handleSelectItem(item);
                               setMobileSearchOpen(false);
                             }}
                           >
                             {poster ? (
                               <img
                                 src={poster}
-                                alt={movie.title}
+                                alt={title}
                                 className="navbar__dropdown-poster"
                               />
                             ) : (
@@ -867,11 +888,18 @@ export default function Navbar() {
                             )}
                             <div className="navbar__dropdown-info">
                               <h4 className="navbar__dropdown-title">
-                                {movie.title}
+                                {title}
                               </h4>
                               <div className="navbar__dropdown-meta">
                                 <span className="navbar__dropdown-year">
                                   {year}
+                                </span>
+                                <span
+                                  className={`navbar__dropdown-badge ${
+                                    isTV ? 'navbar__dropdown-badge--tv' : 'navbar__dropdown-badge--movie'
+                                  }`}
+                                >
+                                  {isTV ? 'TV Series' : 'Movie'}
                                 </span>
                                 {rating && (
                                   <span className="navbar__dropdown-rating">
@@ -889,12 +917,12 @@ export default function Navbar() {
                       className="navbar__dropdown-footer"
                       onClick={handleSearchSubmit}
                     >
-                      See all results for "{query}" &rarr;
+                      See all results for "{query.trim()}" &rarr;
                     </button>
                   </>
                 ) : (
                   <div className="navbar__dropdown-empty">
-                    No movies found
+                    No results found
                   </div>
                 )}
               </div>
