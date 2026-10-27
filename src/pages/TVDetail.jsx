@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import CastCard from '../components/CastCard';
 import TVCard from '../components/TVCard';
@@ -7,6 +7,7 @@ import { SkeletonDetail } from '../components/Skeleton';
 import ErrorState from '../components/ErrorState';
 import {
   getTVDetail,
+  getTVSeasonDetail,
   getBackdropUrl,
   getImageUrl,
   getTrailerVideo,
@@ -154,6 +155,119 @@ function CommunityReviewItem({ review, currentUserId, onDelete, isDeleting }) {
   );
 }
 
+// Format episode air date
+function formatAirDate(dateStr) {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+// Subcomponent: Episode Card / List Row ala Netflix
+function EpisodeRowItem({ episode }) {
+  const [imgError, setImgError] = useState(false);
+  const stillUrl = !imgError && episode.still_path ? getImageUrl(episode.still_path, 'w300') : null;
+  const formattedDate = formatAirDate(episode.air_date);
+
+  return (
+    <article className="group relative flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-zinc-900/50 hover:bg-zinc-900/90 border border-zinc-800/70 hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-black/60">
+      {/* 16:9 Thumbnail Still */}
+      <div className="relative w-full sm:w-60 md:w-64 shrink-0 aspect-video rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800/80 flex items-center justify-center">
+        {stillUrl ? (
+          <img
+            src={stillUrl}
+            alt={episode.name || `Episode ${episode.episode_number}`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-1.5 text-zinc-600 p-2 text-center">
+            <svg
+              className="w-8 h-8 text-zinc-700"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+              <polyline points="17 2 12 7 7 2" />
+            </svg>
+            <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
+              No Preview
+            </span>
+          </div>
+        )}
+
+        {/* Play Icon Overlay on Hover */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+            <svg className="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Episode Number badge */}
+        <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[11px] font-bold text-white border border-white/10 shadow-sm">
+          E{episode.episode_number}
+        </div>
+      </div>
+
+      {/* Episode Details */}
+      <div className="flex-1 min-w-0 w-full py-0.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <h3 className="text-base font-bold text-white group-hover:text-red-400 transition-colors leading-snug">
+            E{episode.episode_number} • {episode.name || `Episode ${episode.episode_number}`}
+          </h3>
+          {episode.vote_average > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 shrink-0">
+              ★ {episode.vote_average.toFixed(1)}
+            </span>
+          )}
+        </div>
+
+        {/* Info Tambahan: Tanggal Rilis & Durasi */}
+        <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 mb-2">
+          {formattedDate && (
+            <span className="flex items-center gap-1 text-zinc-400">
+              <svg className="w-3.5 h-3.5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              {formattedDate}
+            </span>
+          )}
+          {episode.runtime ? (
+            <span className="flex items-center gap-1 text-zinc-400">
+              <svg className="w-3.5 h-3.5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              {episode.runtime}m
+            </span>
+          ) : null}
+        </div>
+
+        {/* Overview / Sinopsis */}
+        <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed line-clamp-3 md:line-clamp-4">
+          {episode.overview || 'No synopsis has been provided for this episode.'}
+        </p>
+      </div>
+    </article>
+  );
+}
+
 export default function TVDetail({ toggleFavorite, isFavorite }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -175,6 +289,11 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
   const [communityRating, setCommunityRating] = useState(8);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
+
+  // Seasons & Episodes Explorer state
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const [episodes, setEpisodes] = useState([]);
+  const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
 
   // Fetch TV Show details from TMDB
   useEffect(() => {
@@ -214,6 +333,63 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
       isCancelled = true;
     };
   }, [id]);
+
+  // Filter & Urutkan Seasons:
+  // Season number 0 (Specials) diletakkan di akhir dan abaikan season tanpa episode
+  const validSeasons = useMemo(() => {
+    if (!tv?.seasons || !Array.isArray(tv.seasons)) return [];
+
+    const withEpisodes = tv.seasons.filter((s) => (s.episode_count || 0) > 0);
+    const regulars = withEpisodes
+      .filter((s) => s.season_number > 0)
+      .sort((a, b) => a.season_number - b.season_number);
+    const specials = withEpisodes.filter((s) => s.season_number === 0);
+
+    return [...regulars, ...specials];
+  }, [tv?.seasons]);
+
+  // Sinkronkan selectedSeason default saat validSeasons berubah
+  useEffect(() => {
+    if (validSeasons.length > 0) {
+      const hasSeason = validSeasons.some((s) => s.season_number === selectedSeason);
+      if (!hasSeason) {
+        const defaultNum =
+          validSeasons.find((s) => s.season_number === 1)?.season_number ??
+          validSeasons[0].season_number;
+        setSelectedSeason(defaultNum);
+      }
+    }
+  }, [validSeasons, id, selectedSeason]);
+
+  // Fetch data episode setiap kali selectedSeason atau id serial berubah
+  useEffect(() => {
+    if (!id || selectedSeason === null || selectedSeason === undefined) return;
+
+    let isCancelled = false;
+    setIsLoadingEpisodes(true);
+
+    getTVSeasonDetail(id, selectedSeason)
+      .then((data) => {
+        if (!isCancelled) {
+          setEpisodes(data?.episodes || []);
+        }
+      })
+      .catch((err) => {
+        if (!isCancelled) {
+          console.error(`Failed to fetch episodes for season ${selectedSeason}:`, err);
+          setEpisodes([]);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoadingEpisodes(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [id, selectedSeason]);
 
   // Real-time listener untuk ulasan komunitas dari Firebase Firestore
   useEffect(() => {
@@ -533,6 +709,130 @@ export default function TVDetail({ toggleFavorite, isFavorite }) {
             )}
           </div>
         </div>
+
+        {/* =============================================
+            Seasons & Episodes Explorer Section
+            ============================================= */}
+        {validSeasons.length > 0 && (
+          <section className="detail__episodes-section mb-14" aria-labelledby="tv-seasons-title">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-3 border-b border-zinc-800/80">
+              <div className="flex items-center gap-3">
+                <h2 id="tv-seasons-title" className="detail__section-title mb-0">
+                  Episodes
+                </h2>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-600/15 text-red-400 border border-red-500/30">
+                  Season {selectedSeason === 0 ? 'Specials' : selectedSeason}
+                </span>
+              </div>
+
+              {/* Total episode indicator */}
+              <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 bg-zinc-900/60 border border-zinc-800/80 px-3 py-1.5 rounded-lg">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span>
+                  {isLoadingEpisodes
+                    ? 'Loading episodes...'
+                    : `${episodes.length} ${episodes.length === 1 ? 'Episode' : 'Episodes'}`}
+                </span>
+              </div>
+            </div>
+
+            {/* Season Selector: Dropdown + Quick Tab Pills */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              {/* Dark mode custom select */}
+              <div className="relative inline-block">
+                <label htmlFor="tv-season-dropdown" className="sr-only">
+                  Select Season
+                </label>
+                <select
+                  id="tv-season-dropdown"
+                  value={selectedSeason}
+                  onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                  className="appearance-none bg-zinc-900/90 border border-zinc-700/80 hover:border-red-500/60 text-white font-semibold text-sm rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all cursor-pointer shadow-lg shadow-black/40"
+                >
+                  {validSeasons.map((s) => (
+                    <option
+                      key={s.id || s.season_number}
+                      value={s.season_number}
+                      className="bg-zinc-900 text-white"
+                    >
+                      {s.name || (s.season_number === 0 ? 'Specials' : `Season ${s.season_number}`)} ({s.episode_count} eps)
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Quick Pills row */}
+              {validSeasons.length > 1 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full scrollbar-none py-1">
+                  {validSeasons.map((s) => {
+                    const isActive = s.season_number === selectedSeason;
+                    return (
+                      <button
+                        key={s.id || s.season_number}
+                        type="button"
+                        onClick={() => setSelectedSeason(s.season_number)}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                            : 'bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
+                        }`}
+                      >
+                        {s.season_number === 0 ? 'Specials' : `Season ${s.season_number}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Episode List / Skeletons */}
+            {isLoadingEpisodes ? (
+              <div className="space-y-3.5">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/60 animate-pulse"
+                  >
+                    <div className="w-full sm:w-60 md:w-64 aspect-video bg-zinc-800/60 rounded-lg shrink-0" />
+                    <div className="flex-1 space-y-2.5 py-1 w-full">
+                      <div className="h-5 bg-zinc-800/80 rounded w-2/5" />
+                      <div className="h-3.5 bg-zinc-800/50 rounded w-1/4" />
+                      <div className="space-y-1.5 pt-2">
+                        <div className="h-3 bg-zinc-800/40 rounded w-full" />
+                        <div className="h-3 bg-zinc-800/40 rounded w-4/5" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : episodes.length > 0 ? (
+              <div className="space-y-3.5">
+                {episodes.map((ep) => (
+                  <EpisodeRowItem key={ep.id || ep.episode_number} episode={ep} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 px-4 rounded-xl bg-zinc-900/30 border border-zinc-800/60 text-zinc-400">
+                <svg
+                  className="w-10 h-10 mx-auto text-zinc-600 mb-2"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                  <polyline points="17 2 12 7 7 2" />
+                </svg>
+                <p className="text-sm font-medium">No episodes found for this season.</p>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Cast Section */}
         {castList.length > 0 && (

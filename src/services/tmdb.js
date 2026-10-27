@@ -200,6 +200,9 @@ export const getTVGenres = () =>
 export const getTVDetail = (id) =>
   fetchFromTMDB(`/tv/${id}`, { append_to_response: 'credits,videos,recommendations,similar' });
 
+export const getTVSeasonDetail = (id, seasonNumber) =>
+  fetchFromTMDB(`/tv/${id}/season/${seasonNumber}`);
+
 export const getTVVideos = (id) =>
   fetchFromTMDB(`/tv/${id}/videos`);
 
