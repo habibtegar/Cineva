@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Fallback Web Audio API synthesizer for cinematic intro chord & sub-bass
@@ -54,7 +54,6 @@ function playSynthesizedIntro() {
 
 export default function SplashScreen({ onFinish }) {
   const [isExiting, setIsExiting] = useState(false);
-  const timeoutRef = useRef(null);
 
   const handleEnter = useCallback(() => {
     if (isExiting) return;
@@ -84,31 +83,45 @@ export default function SplashScreen({ onFinish }) {
 
     // 3. Efek fade-out & transisi scale
     setIsExiting(true);
+  }, [isExiting]);
 
-    // 4. Tutup splash screen setelah durasi transisi selesai (1000ms)
-    timeoutRef.current = setTimeout(() => {
+  // Transisi keluar: tutup splash screen setelah durasi transisi selesai (1000ms)
+  useEffect(() => {
+    if (!isExiting) return;
+    const timer = setTimeout(() => {
       if (typeof onFinish === 'function') {
         onFinish();
       }
     }, 1000);
+    return () => clearTimeout(timer);
   }, [isExiting, onFinish]);
 
-  // Keyboard shortcut: tekan Enter atau Space untuk masuk
+  // Keyboard shortcut: tekan Enter atau Space untuk masuk jika tidak sedang mengetik di input
   useEffect(() => {
+    if (isExiting) return;
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      // Cegah bentrokan: jangan cegah spasi jika user sedang berinteraksi dengan form/input
+      if (
+        e.target &&
+        (e.target.tagName === 'INPUT' ||
+          e.target.tagName === 'TEXTAREA' ||
+          e.target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         handleEnter();
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
     };
-  }, [handleEnter]);
+  }, [isExiting, handleEnter]);
 
   return (
     <div

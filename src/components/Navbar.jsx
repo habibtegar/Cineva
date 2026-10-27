@@ -407,6 +407,11 @@ export default function Navbar() {
                         setShowDropdown(true);
                       }
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.code === 'Space') {
+                        e.stopPropagation();
+                      }
+                    }}
                     className="navbar__search-input"
                     aria-label="Search movies, TV shows"
                   />
@@ -757,6 +762,11 @@ export default function Navbar() {
                 onChange={(e) => {
                   setQuery(e.target.value);
                   if (e.target.value.trim().length >= 2) setShowDropdown(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.code === 'Space') {
+                    e.stopPropagation();
+                  }
                 }}
                 className="navbar__mobile-search-input"
                 aria-label="Search movies, TV shows"
