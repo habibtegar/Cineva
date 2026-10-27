@@ -933,7 +933,7 @@ export default function Navbar() {
 
       {/* Mobile drawer backdrop overlay */}
       <div
-        className={`fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity duration-300 cursor-pointer ${
+        className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-[149] transition-opacity duration-300 cursor-pointer ${
           drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         aria-hidden="true"
@@ -943,12 +943,14 @@ export default function Navbar() {
       {/* Mobile drawer — slides in from right */}
       <aside
         ref={drawerRef}
-        className={`navbar__drawer${drawerOpen ? ' navbar__drawer--open' : ''}`}
+        className={`navbar__drawer flex flex-col h-full justify-between${drawerOpen ? ' navbar__drawer--open' : ''}`}
         aria-label="Navigation menu"
       >
+        {/* Header Drawer */}
         <div className="navbar__drawer-header">
           <span className="navbar__drawer-logo">Cineva</span>
           <button
+            type="button"
             className="navbar__drawer-close"
             onClick={() => setDrawerOpen(false)}
             aria-label="Close menu"
@@ -960,46 +962,151 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile user profile bar */}
-        <div className="navbar__drawer-user">
-          <div className="navbar__avatar navbar__avatar--drawer">
-            {user?.photoURL && !avatarImgError ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || 'Profile'}
-                className="navbar__avatar-img"
-                referrerPolicy="no-referrer"
-                onError={() => setBrokenAvatarUrl(user?.photoURL)}
-              />
-            ) : (user?.displayName || user?.email) ? (
-              <span className="navbar__avatar-initial">
-                {userInitial}
+        {/* Bagian Tengah: Profil Card & Menu Navigasi (Scrollable jika layar pendek) */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Profil Card (Atas) - Tampil lega tanpa tombol Sign Out di sampingnya */}
+          <div className="navbar__drawer-user">
+            <div className="navbar__avatar navbar__avatar--drawer">
+              {user?.photoURL && !avatarImgError ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || 'Profile'}
+                  className="navbar__avatar-img"
+                  referrerPolicy="no-referrer"
+                  onError={() => setBrokenAvatarUrl(user?.photoURL)}
+                />
+              ) : (user?.displayName || user?.email) ? (
+                <span className="navbar__avatar-initial">
+                  {userInitial}
+                </span>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              )}
+            </div>
+            <div className="navbar__drawer-user-info min-w-0 flex-1">
+              <span
+                className="navbar__drawer-user-name truncate block"
+                title={user ? user.displayName : 'Guest User'}
+              >
+                {user ? (user.displayName || 'User') : 'Guest User'}
               </span>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <span
+                className="navbar__drawer-user-status truncate block"
+                title={user ? user.email : 'Google Account'}
+              >
+                {user ? (user.email || 'Google Account') : 'Cineva Free'}
+              </span>
+            </div>
+          </div>
+
+          {/* Menu Navigasi (Tengah) - Active state aksen merah Cineva & auto-close onClick */}
+          <nav className="navbar__drawer-links">
+            <Link
+              to="/"
+              onClick={() => setDrawerOpen(false)}
+              className={`navbar__drawer-link flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 border-l-4 ${
+                location.pathname === '/'
+                  ? 'navbar__drawer-link--active bg-red-600/10 text-red-500 border-red-600 font-semibold'
+                  : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 font-medium'
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              <span>Home</span>
+            </Link>
+            <Link
+              to="/movies"
+              onClick={() => setDrawerOpen(false)}
+              className={`navbar__drawer-link flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 border-l-4 ${
+                location.pathname === '/movies' || location.pathname === '/explore'
+                  ? 'navbar__drawer-link--active bg-red-600/10 text-red-500 border-red-600 font-semibold'
+                  : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 font-medium'
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
+                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                <line x1="7" y1="2" x2="7" y2="22" />
+                <line x1="17" y1="2" x2="17" y2="22" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <line x1="2" y1="7" x2="7" y2="7" />
+                <line x1="2" y1="17" x2="7" y2="17" />
+                <line x1="17" y1="17" x2="22" y2="17" />
+                <line x1="17" y1="7" x2="22" y2="7" />
+              </svg>
+              <span>Movies</span>
+            </Link>
+            <Link
+              to="/tv"
+              onClick={() => setDrawerOpen(false)}
+              className={`navbar__drawer-link flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 border-l-4 ${
+                location.pathname.startsWith('/tv')
+                  ? 'navbar__drawer-link--active bg-red-600/10 text-red-500 border-red-600 font-semibold'
+                  : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 font-medium'
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                <polyline points="17 2 12 7 7 2" />
+              </svg>
+              <span>TV Shows</span>
+            </Link>
+            <Link
+              to="/favorites"
+              onClick={() => setDrawerOpen(false)}
+              className={`navbar__drawer-link flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 border-l-4 ${
+                location.pathname === '/favorites'
+                  ? 'navbar__drawer-link--active bg-red-600/10 text-red-500 border-red-600 font-semibold'
+                  : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 font-medium'
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <span>Favorites</span>
+            </Link>
+            <Link
+              to="/profile"
+              onClick={() => setDrawerOpen(false)}
+              className={`navbar__drawer-link flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 border-l-4 ${
+                location.pathname === '/profile'
+                  ? 'navbar__drawer-link--active bg-red-600/10 text-red-500 border-red-600 font-semibold'
+                  : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 font-medium'
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
-            )}
-          </div>
-          <div className="navbar__drawer-user-info min-w-0 flex-1">
-            <span
-              className="navbar__drawer-user-name truncate block"
-              title={user ? user.displayName : 'Guest User'}
+              <span>Profile</span>
+            </Link>
+            <Link
+              to="/feedback"
+              onClick={() => setDrawerOpen(false)}
+              className={`navbar__drawer-link flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 border-l-4 ${
+                location.pathname === '/feedback'
+                  ? 'navbar__drawer-link--active bg-red-600/10 text-red-500 border-red-600 font-semibold'
+                  : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 font-medium'
+              }`}
             >
-              {user ? (user.displayName || 'User') : 'Guest User'}
-            </span>
-            <span
-              className="navbar__drawer-user-status truncate block"
-              title={user ? user.email : 'Google Account'}
-            >
-              {user ? (user.email || 'Google Account') : 'Cineva Free'}
-            </span>
-          </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Feedback & Requests</span>
+            </Link>
+          </nav>
+        </div>
+
+        {/* 2. Footer Drawer (Bawah) - Tombol Sign Out & TMDB info */}
+        <div className="mt-auto p-4 border-t border-zinc-800/80">
           {user ? (
             <button
               type="button"
-              className="navbar__drawer-login-btn navbar__drawer-login-btn--logout"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white transition-all duration-200 text-sm font-medium"
               onClick={async () => {
                 try {
                   await logout();
@@ -1009,89 +1116,50 @@ export default function Navbar() {
                 }
               }}
             >
-              Sign Out
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4 flex-shrink-0"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Sign Out</span>
             </button>
           ) : (
             <button
               type="button"
-              className="navbar__drawer-login-btn"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white transition-all duration-200 text-sm font-medium"
               onClick={() => {
                 setDrawerOpen(false);
                 navigate('/login');
               }}
             >
-              Login
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4 flex-shrink-0"
+              >
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              <span>Login</span>
             </button>
           )}
+          <p className="text-zinc-600 text-xs text-center mt-3">
+            Cineva v1.0 • Powered by TMDB
+          </p>
         </div>
-
-        {/* Drawer links */}
-        <nav className="navbar__drawer-links">
-          <Link
-            to="/"
-            className={`navbar__drawer-link${location.pathname === '/' ? ' navbar__drawer-link--active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            Home
-          </Link>
-          <Link
-            to="/movies"
-            className={`navbar__drawer-link${location.pathname === '/movies' || location.pathname === '/explore' ? ' navbar__drawer-link--active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-              <line x1="7" y1="2" x2="7" y2="22" />
-              <line x1="17" y1="2" x2="17" y2="22" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <line x1="2" y1="7" x2="7" y2="7" />
-              <line x1="2" y1="17" x2="7" y2="17" />
-              <line x1="17" y1="17" x2="22" y2="17" />
-              <line x1="17" y1="7" x2="22" y2="7" />
-            </svg>
-            Movies
-          </Link>
-          <Link
-            to="/tv"
-            className={`navbar__drawer-link${location.pathname.startsWith('/tv') ? ' navbar__drawer-link--active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
-              <polyline points="17 2 12 7 7 2" />
-            </svg>
-            TV Shows
-          </Link>
-          <Link
-            to="/favorites"
-            className={`navbar__drawer-link${location.pathname === '/favorites' ? ' navbar__drawer-link--active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-            Favorites
-          </Link>
-          <Link
-            to="/profile"
-            className={`navbar__drawer-link${location.pathname === '/profile' ? ' navbar__drawer-link--active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Profile
-          </Link>
-          <Link
-            to="/feedback"
-            className={`navbar__drawer-link${location.pathname === '/feedback' ? ' navbar__drawer-link--active' : ''}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Feedback & Requests
-          </Link>
-        </nav>
       </aside>
     </>
   );
